@@ -1,6 +1,16 @@
 import type { UnitSnap } from "../sim/recorder";
 import { elemClass } from "./util";
 
+/** A persistent event sitting in one of its controller's board slots. */
+export function EventToken({ name, onCard }: { name: string; onCard: (n: string) => void }) {
+  return (
+    <div className="card eventtok" onClick={() => onCard(name)} title="Persistent event (occupies a slot)">
+      <div className="evtag">⚑ event</div>
+      <div className="cn">{name}</div>
+    </div>
+  );
+}
+
 export function Card({ u, onCard }: { u: UnitSnap | null; onCard: (name: string) => void }) {
   if (!u) return <div className="empty">—</div>;
   const pct = u.maxhp > 0 ? Math.max(0, Math.min(100, (u.hp / u.maxhp) * 100)) : 0;

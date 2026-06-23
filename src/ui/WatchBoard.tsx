@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { DECK_NAMES, DECKS } from "../data/decks";
 import { recordGame, type Frame, type SideSnap } from "../sim/recorder";
-import { Card } from "./Card";
+import { Card, EventToken } from "./Card";
 import { EventsPanel } from "./EventsPanel";
 import { Log } from "./Log";
 
@@ -33,9 +33,14 @@ function Side({ s, deckName, acting, onCard }: { s: SideSnap; deckName: string; 
       <div className="zone">
         <div className="zlabel">Active</div>
         <div className="slots">
-          {s.active.length === 0 && s.charging.length === 0 && <div className="empty">empty</div>}
+          {s.active.length === 0 && s.charging.length === 0 && s.events.every((e) => e.zone !== "active") && (
+            <div className="empty">empty</div>
+          )}
           {s.active.map((u, i) => (
             <Card key={i} u={u} onCard={onCard} />
+          ))}
+          {s.events.filter((e) => e.zone === "active").map((e) => (
+            <EventToken key={e.name} name={e.name} onCard={onCard} />
           ))}
           {s.charging.map((c, i) => (
             <div className="card charging" key={`c${i}`}>
@@ -48,9 +53,12 @@ function Side({ s, deckName, acting, onCard }: { s: SideSnap; deckName: string; 
       <div className="zone">
         <div className="zlabel">Passive</div>
         <div className="slots">
-          {s.passive.length === 0 && <div className="empty">empty</div>}
+          {s.passive.length === 0 && s.events.every((e) => e.zone !== "passive") && <div className="empty">empty</div>}
           {s.passive.map((u, i) => (
             <Card key={i} u={u} onCard={onCard} />
+          ))}
+          {s.events.filter((e) => e.zone === "passive").map((e) => (
+            <EventToken key={e.name} name={e.name} onCard={onCard} />
           ))}
         </div>
       </div>

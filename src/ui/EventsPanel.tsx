@@ -1,17 +1,18 @@
 import { getCardInfo } from "../data/loadCards";
-import type { Frame } from "../sim/recorder";
+import type { EventSnap, Frame } from "../sim/recorder";
 
-function Col({ events, label, onCard }: { events: string[]; label: string; onCard: (n: string) => void }) {
+function Col({ events, label, onCard }: { events: EventSnap[]; label: string; onCard: (n: string) => void }) {
   return (
     <div className="epcol">
       <h4>{label}</h4>
       {events.length === 0 && <div className="epnone">none in play</div>}
       {events.map((e, i) => (
-        <div className={`epitem${i === 0 ? " first" : ""}`} key={e}>
-          <span className="epname" onClick={() => onCard(e)}>
-            {e}
+        <div className={`epitem${i === 0 ? " first" : ""}`} key={e.name}>
+          <span className="epname" onClick={() => onCard(e.name)}>
+            {e.name}
           </span>
-          <div className="epeff">{getCardInfo(e)?.text ?? ""}</div>
+          <span className="epzone">{e.zone}</span>
+          <div className="epeff">{getCardInfo(e.name)?.text ?? ""}</div>
         </div>
       ))}
     </div>

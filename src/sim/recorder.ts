@@ -22,13 +22,18 @@ export interface UnitSnap {
   equips: string[];
 }
 
+export interface EventSnap {
+  name: string;
+  zone: "active" | "passive";
+}
+
 export interface SideSnap {
   name: string;
   leader: UnitSnap | null;
   active: UnitSnap[];
   passive: UnitSnap[];
   charging: string[];
-  events: string[];
+  events: EventSnap[];
   hand: number;
   deck: number;
   lockout: boolean;
@@ -68,7 +73,7 @@ export function snap(p: Player): SideSnap {
     active: p.active.map((u) => snapUnit(p, u)),
     passive: p.passive.map((u) => snapUnit(p, u)),
     charging,
-    events: [...p.events],
+    events: [...p.events].map((name) => ({ name, zone: p.eventZones[name] ?? "passive" })),
     hand: p.hand.length,
     deck: p.deck.length,
     lockout: p.lockout,
