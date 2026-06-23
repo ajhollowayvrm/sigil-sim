@@ -55,6 +55,7 @@ The UI consumes immutable per-ply snapshots from the recorder and scrubs through
 ## Source of truth
 
 The CSVs in `docs/` are the card source of truth (the Box folder *Games / Sigil*). The engine loads cards from
-them; stats are never hand-transcribed. Several rules were re-decided in design review and aren't yet in Box —
-`CLAUDE.md` §5 lists these amendments (the six T2 Wild terminals + Metamorphosis), applied here and flagged
-`TODO(v0.8): confirm against Box`. See `CLAUDE.md` for the full brief.
+them; stats are never hand-transcribed. The `docs/` mirror tracks the current canonical versions per Box's
+`0 INDEX - current files.md` (Ruleset v0.7, Combat & Effects v0.3, Kaethlaan v0.4, Next Steps v0.7). The CLAUDE.md
+§5 amendments (the six T2 Wild terminals + Metamorphosis) are now reflected in the Box CSVs, so they're canon —
+not local-only. See `CLAUDE.md` for the full brief.
