@@ -7,9 +7,45 @@
 // or a swing. Pure — no React/DOM, no RNG.
 
 import { canAttack, chars, effAtk, effDef } from "../engine/stats";
-import type { Player, Unit } from "../engine/types";
+import { getCard } from "../data/loadCards";
+import type { Card, Player, Unit } from "../engine/types";
 
 const has = (arr: string[], x: string) => arr.includes(x);
+
+// ----- transformation potential -----
+// A body is worth more than its current stats if it can CLIMB its lineage into a
+// stronger form. This is the engine of the game; a one-ply score that ignores it
+// makes the AI crown dead-ends, decline beneficial transforms, and never set up the
+// climb. We credit each body the discounted value of the best form it can still
+// reach — only descending through forms it can actually OBTAIN (in hand or deck), so
+// a Kael Trainee with Swiftblade in the deck is valued for the swordsman to come.
+const CLIMB_DISCOUNT = 0.6; // per lineage step (a future turn + a drawn card)
+
+/** Static worth of a form's printed stats (no board context). */
+function formValue(t: Card): number {
+  return t.hp + t.deff * 0.5 + t.atk + t.tier * W.tier;
+}
+
+/** Discounted upside of climbing `u`'s lineage, reachable only through forms in `have`. */
+function climbPotential(have: Set<string>, u: Unit): number {
+  const baseVal = formValue(u.t);
+  let best = 0;
+  const queue: [Card, number][] = [[u.t, 0]];
+  const seen = new Set<string>([u.t.name]);
+  while (queue.length) {
+    const [t, depth] = queue.shift()!;
+    for (const [dest] of t.upg) {
+      if (seen.has(dest) || !have.has(dest)) continue; // must be able to step to it
+      seen.add(dest);
+      const dc = getCard(dest);
+      if (!dc) continue;
+      const gain = (formValue(dc) - baseVal) * Math.pow(CLIMB_DISCOUNT, depth + 1);
+      if (gain > best) best = gain;
+      queue.push([dc, depth + 1]);
+    }
+  }
+  return best;
+}
 
 // Tunable weights. These are deliberately HP-denominated (1 point ≈ 1 HP) so the
 // numbers stay legible against card stats (bodies are 10-60 HP, ATK 10-50).
@@ -27,7 +63,7 @@ const W = {
 
 /** How much a single unit is worth to its controller, in the current position.
  *  Used both for whole-board material and as the base of combat target priority. */
-export function unitValue(p: Player, u: Unit): number {
+export function unitValue(p: Player, u: Unit, have?: Set<string>): number {
   const atk = effAtk(p, u);
   const def = effDef(p, u);
   const hp = Math.max(0, u.hp);
@@ -37,6 +73,7 @@ export function unitValue(p: Player, u: Unit): number {
   const off = canSwing ? atk : atk * W.offPassive;
   let v = hp + def * W.def + off + u.tier * W.tier + u.kills * W.kill;
   if (u.leader) v += W.leader;
+  if (have) v += climbPotential(have, u); // latent value of climbing this body's lineage
   return v;
 }
 
@@ -64,8 +101,11 @@ function economy(p: Player): number {
  *  Symmetric: it credits my material/economy and debits the opponent's. */
 export function evalState(me: Player, opp: Player): number {
   let s = 0;
-  for (const u of chars(me)) s += unitValue(me, u);
-  for (const u of chars(opp)) s -= unitValue(opp, u);
+  // What forms each side can still obtain — the reachable set for climb potential.
+  const haveMe = new Set<string>([...me.hand, ...me.deck]);
+  const haveOpp = new Set<string>([...opp.hand, ...opp.deck]);
+  for (const u of chars(me)) s += unitValue(me, u, haveMe);
+  for (const u of chars(opp)) s -= unitValue(opp, u, haveOpp);
   s += economy(me) - economy(opp);
   if (!me.leader) s -= W.leaderless;
   if (!opp.leader) s += W.leaderless;
