@@ -97,6 +97,15 @@ export const EQUIP: Record<string, EquipEff> = {
   "Lance of the Archmage": { atk: 40, deff: 10 },
   "Khaneris Sword": { atk: 20, deff: 10 },
   "The Great Sword of Khaneris": { atk: 40, deff: 20 },
+  // generic forge ladders (any bearer): offense + defense
+  "Rough Blade": { atk: 10 },
+  "Tempered Edge": { atk: 20, deff: 10 },
+  "Masterwork Blade": { atk: 40, deff: 10 },
+  "Round Shield": { deff: 10 }, // forges into the existing Tower Shield → Aegis Plate ladder
+  // Goblin archetype ladder (Goblin bearers)
+  "Goblin Shiv": { atk: 10 },
+  "Goblin Cleaver": { atk: 20, deff: 10 },
+  "Warboss' Maul": { atk: 40, deff: 10 },
 };
 
 // Item forging cost, keyed by the DESTINATION item (the graph topology — which item
@@ -109,6 +118,11 @@ export const ITEM_TRANSFORM_COST: Record<string, ItemCost> = {
   "Reaver's Edge": { items: 2 },
   "Lance of the Archmage": { items: 2 },
   "The Great Sword of Khaneris": { items: 2 },
+  "Tempered Edge": { items: 1 },
+  "Masterwork Blade": { items: 2 },
+  "Tower Shield": { items: 1 }, // forge up from Round Shield
+  "Goblin Cleaver": { items: 1 },
+  "Warboss' Maul": { items: 2 },
 };
 
 // Signature items that may only be borne by a matching character (substring match on
@@ -119,6 +133,9 @@ export const ITEM_BEARER_INCLUDES: Record<string, string> = {
   "Reaver's Edge": "Kael",
   "Arlia's Lance": "Arlia",
   "Lance of the Archmage": "Arlia",
+  "Goblin Shiv": "Goblin",
+  "Goblin Cleaver": "Goblin",
+  "Warboss' Maul": "Goblin",
 };
 
 // Items that bypass the tier gate (item tier ≤ bearer tier). Empty for now, but the

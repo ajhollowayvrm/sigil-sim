@@ -21,7 +21,7 @@ Buckler,T1,Item,"When consumed in a transformation, the resulting character ente
 Field Rations,T1,Item,"When you play this item, heal one of your characters 10.",Hardtack and resolve.,Cheap on-play heal/sustain.,
 Twin Daggers,T2,Item,Equipped character gains +10 ATK and +10 DEF.,Two answers to every question.,Modest balanced equip; no downside.,
 Tidecaller's Pearl,T2,Item,"Equipped character gains +20 ATK, and an additional +10 ATK if their element is Water.",It hums when the tide turns.,Water analog to Staff of Aelion.,
-Tower Shield,T2,Item,Equipped character gains +20 DEF and -10 ATK.,You will not get past it. You will not get much done behind it either.,Defensive equip with an offense downside.,
+Tower Shield,T2,Item,Equipped character gains +20 DEF and -10 ATK.,You will not get past it. You will not get much done behind it either.,Defensive equip with an offense downside.,Round Shield
 Vital Charm,T2,Item,Equipped character gains +20 HP and -10 ATK.,It keeps the heart beating. It does not make the hand quicker.,HP equip with an offense downside.,
 Berserker's Brand,T2,Item,Equipped character gains +30 ATK and -20 DEF.,The brand burns away everything but forward.,Aggro closer for fragile attackers; big offense for big exposure.,
 Aegis Plate,T3,Item,"Equipped character gains +40 DEF and +20 HP, but has -20 ATK and cannot be declared as an attacker.",A fortress you can wear. A fortress does not charge.,Pure wall with a hard downside.,Tower Shield
@@ -33,3 +33,10 @@ Arlia's Lance,T2,Item,Equipped character gains +20 ATK and +10 DEF. Equip only t
 Lance of the Archmage,T3,Item,Equipped character gains +40 ATK and +10 DEF. Equip only to an Arlia character.,She stopped reaching for the staff. The lance reached back.,Forge from Arlia's Lance (cost: 2 items).,Arlia's Lance
 Khaneris Sword,T2,Item,Equipped character gains +20 ATK and +10 DEF.,"A king's blade, before it was a legend.",Legendary lore weapon; forge base.,
 The Great Sword of Khaneris,T3,Item,Equipped character gains +40 ATK and +20 DEF.,They do not name swords after the living.,Forge from Khaneris Sword (cost: 2 items).,Khaneris Sword
+Rough Blade,T1,Item,Equipped character gains +10 ATK.,"Cheap steel, honestly forged.",Generic forge base (offense ladder).,
+Tempered Edge,T2,Item,Equipped character gains +20 ATK and +10 DEF.,Folded until it stopped arguing.,Forge from Rough Blade (cost: 1 item).,Rough Blade
+Masterwork Blade,T3,Item,Equipped character gains +40 ATK and +10 DEF.,The smith signed this one.,Forge from Tempered Edge (cost: 2 items).,Tempered Edge
+Round Shield,T1,Item,Equipped character gains +10 DEF.,A door you can carry.,Generic forge base — feeds the existing Tower Shield -> Aegis Plate ladder.,
+Goblin Shiv,T1,Item,Equipped character gains +10 ATK. Equip only to a Goblin character.,"Found, not made.",Goblin signature forge base.,
+Goblin Cleaver,T2,Item,Equipped character gains +20 ATK and +10 DEF. Equip only to a Goblin character.,"Bigger goblin, bigger answer.",Forge from Goblin Shiv (cost: 1 item).,Goblin Shiv
+Warboss' Maul,T3,Item,Equipped character gains +40 ATK and +10 DEF. Equip only to a Goblin character.,The last argument the warband ever needs.,Forge from Goblin Cleaver (cost: 2 items).,Goblin Cleaver

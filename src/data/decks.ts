@@ -48,7 +48,7 @@ export function deckGoblin(): string[] {
       "Goblin War",
       "Horde Frenzy",
     ],
-    ["Twin Daggers", "Tower Shield", "Buckler", "Buckler"],
+    ["Goblin Shiv", "Tower Shield", "Buckler", "Buckler"],
     ["Bogfang", "Bogfang", "Stoneback", "Stoneback", "Murlifect", "Murlifect", "Galewing", "Cinderpel"],
   );
 }
