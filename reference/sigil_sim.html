@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sigil — Simulation Test</title>
+<style>
+:root{
+  --bg:#0f1117;--panel:#181b24;--panel2:#1f2330;--line:#2c3140;--ink:#e7e9ee;--mut:#8b91a3;
+  --fire:#e8552f;--water:#3b86e8;--earth:#5fa83f;--wind:#2fc7c7;--light:#e8c43a;--dark:#9a5fe0;
+  --acc:#c9a24b;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+h1{font-size:20px;margin:0;letter-spacing:.5px}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 16px 60px}
+header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:14px}
+header .sub{color:var(--mut);font-size:12px}
+.tabs{display:flex;gap:6px;margin:0 0 14px}
+.tab{background:var(--panel);border:1px solid var(--line);color:var(--mut);padding:7px 16px;border-radius:8px;cursor:pointer;font-weight:600}
+.tab.on{background:var(--panel2);color:var(--ink);border-color:var(--acc)}
+.panel{display:none}.panel.on{display:block}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:12px}
+.bar label{color:var(--mut);font-size:12px;margin-right:2px}
+select,input[type=number]{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:6px 8px;font:inherit}
+input[type=number]{width:70px}
+button{background:var(--acc);color:#1a1505;border:none;border-radius:7px;padding:7px 14px;font-weight:700;cursor:pointer}
+button.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+button:disabled{opacity:.4;cursor:default}
+.vs{color:var(--mut);font-weight:700}
+.playback{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.playback .fc{color:var(--mut);font-size:12px;margin-left:6px;min-width:230px}
+.boards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.side{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px}
+.side.acting{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc) inset}
+.sidehead{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.deckname{font-weight:700}
+.counts{margin-left:auto;color:var(--mut);font-size:12px}
+.lock{background:#5a1d1d;color:#ffb4b4;font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px}
+.zone{margin-bottom:8px}
+.zlabel{font-size:10px;letter-spacing:1px;color:var(--mut);text-transform:uppercase;margin-bottom:4px}
+.slots{display:flex;gap:8px;flex-wrap:wrap}
+.leaderzone .card{border-width:2px}
+.empty{color:#454b5c;font-size:12px;padding:6px 0}
+.card{width:148px;background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:9px;padding:7px 8px;position:relative}
+.card.leader{box-shadow:0 0 0 1px var(--acc)}
+.card.dead{opacity:.35}
+.card.charging{border-style:dashed;opacity:.8}
+.card .cn{font-weight:700;font-size:12px;line-height:1.25;min-height:30px}
+.card .chg{color:var(--mut);font-size:11px;margin-top:6px}
+.card .row{display:flex;gap:5px;align-items:center;margin:4px 0;flex-wrap:wrap}
+.tier{background:#000a;border:1px solid var(--line);border-radius:4px;font-size:10px;padding:0 4px;font-weight:700}
+.el{font-size:10px;color:var(--mut)}
+.wt{background:#4a2a12;color:#ffcf9e;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px}
+.kills{background:#3a1530;color:#ffb4e6;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px}
+.hpbar{height:14px;background:#0c0e14;border-radius:5px;position:relative;overflow:hidden;margin:3px 0}
+.hpfill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#3fae5f,#8fd06b);transition:width .15s}
+.hptext{position:absolute;width:100%;text-align:center;font-size:10px;font-weight:700;color:#fff;text-shadow:0 1px 1px #000a;line-height:14px}
+.stats{display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-top:3px}
+.stats .atk{color:#ff9a7a}.stats .def{color:#8fc0ff}
+.equips{margin-top:5px;display:flex;gap:4px;flex-wrap:wrap}
+.eq{font-size:9px;background:#13202b;border:1px solid #244;color:#9fd;border-radius:4px;padding:1px 4px}
+.events{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+.ev{font-size:10px;background:#241a30;border:1px solid #443055;color:#d9b6ff;border-radius:5px;padding:2px 7px;font-weight:600}
+.fire{border-left-color:var(--fire)}.water{border-left-color:var(--water)}.earth{border-left-color:var(--earth)}
+.wind{border-left-color:var(--wind)}.light{border-left-color:var(--light)}.dark{border-left-color:var(--dark)}
+.dl{border-left-color:transparent;border-image:linear-gradient(var(--dark),var(--light)) 1}
+.banner{margin:12px 0;padding:12px 14px;border-radius:10px;background:var(--panel2);border:1px solid var(--acc);font-weight:700;display:none}
+.banner.show{display:block}
+.logwrap{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.logbox{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px}
+.logbox h3{margin:0 0 8px;font-size:12px;color:var(--mut);letter-spacing:.5px;text-transform:uppercase}
+.loglines{font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;max-height:300px;overflow:auto;color:#cdd2de}
+.loglines .ko{color:#ff9a9a}.loglines .ply{color:var(--acc);font-weight:700}
+table{border-collapse:collapse;width:100%;margin-top:4px}
+th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);font-size:13px}
+th{color:var(--mut);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.matchblock{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.matchblock h3{margin:0 0 6px;font-size:15px}
+.winbar{height:22px;border-radius:6px;overflow:hidden;display:flex;margin:8px 0;border:1px solid var(--line)}
+.winbar span{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#0c0e14}
+.meta{color:var(--mut);font-size:12px}
+.note{color:var(--mut);font-size:12px;margin:10px 0}
+.deckpanel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-top:12px}
+.deckpanel h3{margin:0 0 6px;font-size:13px}
+.decklist{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;font-size:12px}
+.decklist ul{margin:4px 0;padding-left:16px;color:#cdd2de}
+.decklist .dt{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-top:6px}
+details summary{cursor:pointer;color:var(--mut);font-size:12px}
+@media(max-width:760px){.boards,.logwrap,.decklist{grid-template-columns:1fr}.card{width:46%}}
+.cardlink{color:var(--acc);text-decoration:underline dotted;cursor:pointer}
+.card[data-card],.ev[data-card],.eq[data-card]{cursor:pointer}
+.card[data-card]:active{filter:brightness(1.2)}
+#cardModal{display:none;position:fixed;inset:0;background:#000b;z-index:60;align-items:center;justify-content:center;padding:18px}
+#cardModal.show{display:flex}
+.cm-box{background:var(--panel2);border:1px solid var(--acc);border-radius:14px;max-width:400px;width:100%;max-height:86vh;overflow:auto;padding:16px 18px 18px;position:relative}
+.cm-close{position:absolute;right:10px;top:10px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:3px 9px;font-weight:700}
+.cmname{font-weight:800;font-size:17px;padding-right:28px}
+.cmsub{color:var(--mut);font-size:12px;font-style:italic;margin-top:1px}
+.cmmeta{color:var(--mut);font-size:12px;margin:4px 0 8px}
+.cmstats{display:flex;gap:14px;margin:6px 0 2px;font-weight:700}
+.cmstats .atk{color:#ff9a7a}.cmstats .def{color:#8fc0ff}.cmstats .hp{color:#8fd06b}
+.cmab{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:8px;font-size:13px;line-height:1.5}
+.cmlabel{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);display:block;margin-bottom:2px}
+.cmrow{margin:8px 0;font-size:13px}
+.cmflav{font-style:italic;color:#b9bfd0;margin-top:10px;font-size:13px;border-top:1px solid var(--line);padding-top:8px}
+.eventspanel{margin-top:12px}
+.ephead{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+.epgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.epcol{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 11px}
+.epcol h4{margin:0 0 4px;font-size:12px;color:var(--ink)}
+.epitem{border-top:1px solid var(--line);padding:6px 0}
+.epitem.first{border-top:none}
+.epname{font-weight:700;font-size:12px;color:#d9b6ff}
+.epeff{font-size:11px;color:#b9bfd0;line-height:1.45;margin-top:2px}
+.epnone{color:#454b5c;font-size:12px;padding:4px 0}
+@media(max-width:760px){.epgrid{grid-template-columns:1fr}}
+.poolgroup{margin:12px 0}
+.poolgroup h4{margin:6px 0;font-size:13px;color:var(--acc)}
+.poolchips{display:flex;flex-wrap:wrap;gap:6px}
+.poolchip{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 9px;font-size:12px;cursor:pointer}
+.poolchip:hover{border-color:var(--acc)}
+.cov{font-size:12.5px;line-height:1.7}
+.cov b{color:var(--ink)}.cov .ok{color:#8fd06b}.cov .approx{color:#e8c43a}.cov .no{color:#ff9a9a}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Sigil — Simulation Test</h1>
+  <span class="sub">rules-faithful engine · Ruleset v0.7 + Combat &amp; Effects v0.3 (port of sigil_sim.py v2.1)</span>
+</header>
+
+<div class="tabs">
+  <div class="tab on" data-tab="watch">▶ Watch a game</div>
+  <div class="tab" data-tab="batch">📊 Batch simulation</div>
+  <div class="tab" data-tab="cards">📖 Cards &amp; rules</div>
+</div>
+
+<!-- WATCH -->
+<div class="panel on" id="watch">
+  <div class="bar">
+    <label>Deck A</label><select id="selA"></select>
+    <span class="vs">vs</span>
+    <label>Deck B</label><select id="selB"></select>
+    <label>seed</label><input type="number" id="seedW" value="1"><label style="margin-left:2px"><input type="checkbox" id="lockSeed"> lock</label>
+    <button id="newGame">New game</button>
+    <button class="ghost" id="autoBtn">▶▶ Auto</button>
+    <label>speed</label><input type="number" id="speed" value="600" step="100" title="ms per step"> <span class="meta">ms</span>
+  </div>
+  <div class="bar playback">
+    <button class="ghost" id="bFirst">⏮</button>
+    <button class="ghost" id="bPrev">◀ prev</button>
+    <button class="ghost" id="bNext">next ▶</button>
+    <button class="ghost" id="bLast">⏭</button>
+    <span class="fc" id="frameLabel">—</span>
+  </div>
+  <div class="banner" id="banner"></div>
+  <div class="boards"><div class="side" id="sideA"></div><div class="side" id="sideB"></div></div>
+  <div class="eventspanel" id="eventsPanel"></div>
+  <div class="logwrap">
+    <div class="logbox"><h3>This step</h3><div class="loglines" id="curlog"></div></div>
+    <div class="logbox"><h3>Full play-by-play</h3><div class="loglines" id="fulllog"></div></div>
+  </div>
+  <div class="deckpanel">
+    <details><summary>Deck lists (what's in each)</summary><div class="decklist" id="decklist"></div></details>
+  </div>
+  <p class="note">The AI plays both sides with the simulator's greedy heuristic (hard-cast only a T1 base — or a standalone that prints its own play permission, like King Honathan — to the active or passive zone → link equipment immediately to a passive slot → play wars/auras → transform toward terminals → attack to KO else chip the weakest target → elevate the strongest eligible character, from active or passive). T2+ forms are reached only by transformation. Same seed + same decks = same game. <b>Tip:</b> tap or long-press any card on the board (or a card name in the log) to read its full inscription.</p>
+</div>
+
+<!-- BATCH -->
+<div class="panel" id="batch">
+  <div class="bar">
+    <label>games / matchup</label><input type="number" id="batchN" value="400" step="100">
+    <label>seed</label><input type="number" id="batchSeed" value="7">
+    <button id="runAll">Run 3 canonical matchups</button>
+  </div>
+  <div class="bar">
+    <label>Custom</label><select id="cA"></select><span class="vs">vs</span><select id="cB"></select>
+    <label>games</label><input type="number" id="cN" value="400" step="100">
+    <button class="ghost" id="runCustom">Run custom</button>
+  </div>
+  <div id="batchResults"></div>
+  <p class="note">Win-rates are statistical (a seeded but different RNG than the Python build), so expect small variance vs <code>sigil_sim.py</code>, not identical numbers. "len" is game length in turns; end-reason breakdown shows how games are decided.</p>
+</div>
+
+<div class="panel" id="cards">
+  <div id="coverage" class="deckpanel"></div>
+  <div class="bar"><input type="text" id="cardSearch" placeholder="search the card pool…" style="flex:1"></div>
+  <div id="cardpool"></div>
+</div>
+
+</div>
+<div id="cardModal"><div class="cm-box"><button id="cardModalClose" class="cm-close">✕</button><div id="cardModalBody"></div></div></div>
+<script>
+// ---------- RNG (seedable) ----------
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function shuffle(arr,rnd){for(let i=arr.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+
+// ---------- elements ----------
+const PHYS={Fire:"Earth",Earth:"Wind",Wind:"Water",Water:"Fire"};
+function comps(e){return e.split(" & ");}
+function beats(att,deff){for(const ae of comps(att))for(const de of comps(deff)){if(PHYS[ae]===de)return true;if(ae==="Light"&&de==="Dark")return true;}return false;}
+function darkVsLight(att,deff){return comps(att).includes("Dark")&&comps(deff).includes("Light");}
+function inter(a,b){for(const x of a)if(b.includes(x))return true;return false;} // set-intersection truthiness
+const has=(arr,x)=>arr.includes(x);
+
+// ---------- card data (curated; stats per CSV) ----------
+function C(name,elem,tier,hp,atk,deff,affils,abil,upg,chain,terminal){
+  return {name,elem,tier,hp,atk,deff,affils,abil:abil||[],upg:upg||[],chain:chain||null,terminal:!!terminal};
+}
+const CHAR_LIST=[
+ C("Arlia, Destined Trainee","Fire",1,20,10,10,["Destined"],[],[["Mage Arlia",{named:"Instructional Tome"}],["Squire Arlia",{named:"Instructional Sword"}]]),
+ C("Mage Arlia","Fire",2,30,40,10,["Mages Guild","Destined"],["aura_mages"],[["Arlia, Youngest Archmage",{items:2}],["The Wandering Acolyte Arlia",{disillusion:1}]]),
+ C("Squire Arlia","Earth",2,50,20,20,["Kaethlaan Knights","Destined"],[],[["Captain Arlia",{items:2}]]),
+ C("Arlia, Youngest Archmage","Fire",3,40,70,20,["Mages Guild","Destined","Attuned"],[],[],{name:"Consortium",affil:["Mages Guild","Attuned"],size:2,mod:0,active_only:false},true),
+ C("Captain Arlia","Earth",3,70,40,50,["Kaethlaan Knights","Royal Army","Destined"],["my_liege"],[],{name:"Triangle Attack",affil:["Kaethlaan Knights"],size:3,mod:30,active_only:false},true),
+ C("The Wandering Acolyte Arlia","Light",3,50,40,20,["Destined","Wandering"],[],[["The Ascended",{items:1}]]),
+ C("The Ascended","Dark & Light",4,60,60,40,["Divine Channel","Ascended","Wandering"],[],[],{name:"The Channel",affil:["Divine Channel","Ascended"],size:2,mod:0,aoe:true},true),
+ C("King Honathan","Light",4,90,40,50,["Royal Army","Kaethlaan Knights"],["aura_honathan","leader_protect_royal"],[],{name:"Rally the Realm",affil:["Royal Army"],size:2,mod:20,active_only:false},true),
+ C("Kael, Destined Trainee","Water",1,20,20,0,["Destined"],[],[["Swiftblade Kael",{named:"Back-Alley Blade"}]]),
+ C("Swiftblade Kael","Water",2,40,50,10,["Royal Army","Destined"],[],[["Kael the Shadow",{}],["Kael the Captured",{taken_prisoner:1}]]),
+ C("Kael the Shadow","Water",3,50,70,10,["Royal Army","Destined"],["honathan_buff","hit_passive"],[["The King's Blade",{}]]),
+ C("The King's Blade","Water",4,70,80,30,["Royal Army","Destined"],["honathan_buff","hit_leader","draw_on_ko_if_honathan"],[],null,true),
+ C("Kael the Captured","Water",2,40,30,10,["War-Torn","Destined"],[],[["Kael the Runaway",{}]]),
+ C("Kael the Runaway","Water",2,40,50,0,["Faithless","Destined"],["no_aura"],[["Kael the Killer",{}]]),
+ C("Kael the Killer","Water",3,50,70,0,["Mercenary","Faithless","Destined"],["blood_money","no_aura"],[["The Silent",{}]]),
+ C("The Silent","Water",4,60,90,10,["Wandering","Faithless","Destined"],["hit_passive","must_attack","no_aura","high_atk_bonus"],[],null,true),
+ C("Illyego, the Orphan","Dark",1,20,20,0,["Faithless"],["war_child","no_aura"],[["Illyego, the Soldier",{need_war:1}]]),
+ C("Illyego, the Soldier","Dark",2,40,40,10,["Mercenary","Faithless"],["war_child","no_aura"],[["Illyego, the Conqueror",{kills:3}]]),
+ C("Illyego, the Conqueror","Dark",3,60,60,20,["Faithless"],["war_child","war_atk","no_aura"],[],null,true),
+ C("Goblin Soldier","Earth",1,30,20,10,["Goblin"],[],[["Goblin Lieutenant",{}]]),
+ C("Goblin Lieutenant","Earth",2,40,30,20,["Goblin"],[],[["Goblin Captain",{}]]),
+ C("Goblin Captain","Earth",3,60,40,30,["Goblin"],["aura_goblin"],[],null,true),
+ C("Lor'oak Goblin Grunt","Earth",1,30,20,10,["Goblin"],[],[["Lor'oak Goblin Commander",{}]]),
+ C("Lor'oak Goblin Commander","Earth",2,50,30,20,["Goblin"],[],[],{name:"Rush",affil:["Goblin"],size:2,mod:0,active_only:true},true),
+ C("Touched Child Hresheeba","Light",1,20,10,10,["Attuned"],[],[["Old Maid Hresheeba",{}]]),
+ C("Old Maid Hresheeba","Light",2,40,10,20,["Divine Channel","Attuned"],["keeper_channel"],[],null,true),
+ C("Channel Being","Light",1,20,10,10,["Divine Channel"],[],[],null,true),
+ C("A Man Bred for War","Earth",3,60,40,30,["Mercenary"],["forged_in_chains"],[],null,true),
+ C("Cinderpel","Fire",1,20,20,0,["Wild"],[],[],null,true),C("Pyrnit","Fire",1,10,30,0,["Wild"],[],[],null,true),
+ C("Bogfang","Earth",1,30,20,0,["Wild"],[],[],null,true),C("Stoneback","Earth",1,30,10,20,["Wild"],[],[],null,true),
+ C("Murlifect","Earth",1,20,20,10,["Wild"],["regrow"],[],null,true),
+ C("Galewing","Wind",1,30,20,10,["Wild"],[],[],null,true),C("Glimmermoth","Light",1,10,10,20,["Wild"],[],[],null,true),
+ C("Lumenkit","Light",1,20,10,10,["Wild"],[],[],null,true),C("Sootcrawler","Dark",1,20,20,0,["Wild"],[],[],null,true),
+ // T2 Wilds — reached only via Metamorphosis (any T1 Wild -> any T2 Wild). Terminal, support-tier (no affiliation web).
+ C("Embermaw","Fire",2,40,40,10,["Wild"],[],[],null,true),
+ C("Craghide","Earth",2,60,20,30,["Wild"],["regrow"],[],null,true),
+ C("Skirrl","Wind",2,40,30,10,["Wild"],[],[],{name:"Gust",affil:["Wild"],size:2,mod:0,active_only:true},true),
+ C("Tidewretch","Water",2,50,30,20,["Wild"],[],[],null,true),
+ C("Hollowed Stag","Light",2,40,20,30,["Wild"],[],[],null,true),
+ C("Gravecreep","Dark",2,40,40,0,["Wild"],[],[],null,true),
+ // Additional roster (pool/inscription completeness; not wired into the four sample decks):
+ C("Thestral","Dark",1,20,20,0,["Wild"],[],[],null,true),
+ C("Barangrang","Wind",1,20,10,10,["Wild"],[],[],null,true),
+ C("Tidewhisk","Water",1,20,10,10,["Wild"],[],[],null,true),
+ C("Frostnip","Water",1,20,10,10,["Wild"],[],[],null,true),
+ C("Second in Command Kael","Water",2,50,30,20,["Royal Army","Destined"],["redirect_arlia"],[],null,true),
+ C("The Acolyte Illyego","Light",3,60,40,30,["Wandering"],["cannot_become_wartorn"],[],null,true),
+];
+const CHARS={};for(const c of CHAR_LIST)CHARS[c.name]=c;
+// A character is a transformation destination if some other form upgrades into it.
+// Such forms are reached ONLY by transformation; only base forms + no-transform-in standalones are hard-castable.
+const TRANSFORM_DESTS=new Set();for(const c of CHAR_LIST)for(const u of c.upg)TRANSFORM_DESTS.add(u[0]);
+// "You cannot play a T2+ character from hand unless a card lets you." Only T1 bases are hard-castable,
+// plus specific standalones that print their own play permission (e.g. King Honathan).
+// King Honathan prints a play permission: "control 2+ other Kaethlaan characters." The engine doesn't track
+// kingdom, so we approximate with a 2+ board-presence proxy.
+const CHAR_PLAY={"King Honathan":p=>boardChars(p).length>=2};
+const isHardCastable=name=>!!CHARS[name]&&!TRANSFORM_DESTS.has(name)&&(CHARS[name].tier===1||!!CHAR_PLAY[name]);
+
+const EQUIP={
+ "Instructional Tome":{atk:10},"Instructional Sword":{atk:10},"Back-Alley Blade":{atk:10},
+ "Twin Daggers":{atk:10,deff:10},"Tidecaller's Pearl":{atk:20,water_atk:10},
+ "Tower Shield":{deff:20,atk:-10},"Vital Charm":{maxhp:20,atk:-10},
+ "Berserker's Brand":{atk:30,deff:-20},"Aegis Plate":{deff:40,maxhp:20,atk:-20,cannot_attack:true},
+ "Warmonger's Resolve":{war_atk:20},"Unbroken Will":{immune_wartorn:true},
+};
+const FUEL={"Whetstone":{atk:10},"Buckler":{deff:10},"Warlord's Spoils":{all:10}};
+const ONPLAY={"Field Rations":{heal:10}};
+const PERSIST=new Set(["War","Holy War","Goblin War","Taken Prisoner","Disillusioned","Rally to War","Crusade","Horde Frenzy","Hardened Veterans","The Broken March"]);
+const T2ITEMS=new Set([...Object.keys(EQUIP),...Object.keys(FUEL)]);
+const EQUIP_COND={"Warmonger's Resolve":p=>hasWar(p)}; // printed equipment play-conditions
+
+// ---------- decks ----------
+function D(...parts){let d=[];for(const p of parts)d=d.concat(p);if(d.length>=30)return d.slice(0,30);while(d.length<30)d.push("Stoneback");return d;}
+function deckLoyalist(){return D(
+  ["King Honathan","Arlia, Destined Trainee","Mage Arlia","Squire Arlia","Arlia, Youngest Archmage","Captain Arlia","The Wandering Acolyte Arlia","The Ascended","Touched Child Hresheeba","Old Maid Hresheeba","Channel Being","Channel Being","Disillusioned"],
+  ["Instructional Tome","Instructional Sword","Twin Daggers","Twin Daggers","Tower Shield","Vital Charm","Field Rations"],
+  ["Lumenkit","Glimmermoth","Stoneback","Stoneback","Murlifect","Bogfang","Cinderpel","Galewing"]);}
+function deckGoblin(){return D(
+  ["Goblin Soldier","Goblin Soldier","Goblin Soldier","Goblin Lieutenant","Goblin Lieutenant","Goblin Captain","Lor'oak Goblin Grunt","Lor'oak Goblin Grunt","Lor'oak Goblin Grunt","Lor'oak Goblin Commander","Goblin War","Horde Frenzy"],
+  ["Twin Daggers","Tower Shield","Buckler","Buckler"],
+  ["Bogfang","Bogfang","Stoneback","Stoneback","Murlifect","Murlifect","Galewing","Cinderpel"]);}
+function deckWar(){return D(
+  ["Kael, Destined Trainee","Swiftblade Kael","Kael the Captured","Kael the Runaway","Kael the Killer","The Silent","Illyego, the Orphan","Illyego, the Soldier","Illyego, the Conqueror","A Man Bred for War","Sootcrawler","Pyrnit","Bogfang","War","Holy War","Taken Prisoner","Taken Prisoner","The Broken March","Rally to War"],
+  ["Back-Alley Blade","Whetstone","Buckler","Twin Daggers","Tidecaller's Pearl","Berserker's Brand","Warmonger's Resolve","Unbroken Will","Vital Charm","Field Rations","Whetstone"]);}
+function deckWild(){return D(
+  ["Bogfang","Bogfang","Bogfang","Stoneback","Stoneback","Murlifect","Murlifect","Cinderpel","Cinderpel","Galewing","Galewing","Lumenkit","Lumenkit","Glimmermoth","Sootcrawler","Sootcrawler","Pyrnit","Embermaw","Craghide","Skirrl","Tidewretch","Hollowed Stag","Gravecreep","Metamorphosis","Metamorphosis","Metamorphosis","Metamorphosis"],
+  ["Twin Daggers","Whetstone","Buckler"]);}
+const DECKS={War:deckWar,Loyalist:deckLoyalist,Goblin:deckGoblin,Wild:deckWild};
+
+const isItem=c=>EQUIP[c]||FUEL[c]||ONPLAY[c];
+
+// ---------- recorder (browser watch mode; off for batch) ----------
+const REC={on:false,log(){}};
+
+// ---------- entities ----------
+function makeUnit(t,turn){return {t,tier:t.tier,maxhp:t.hp,hp:t.hp,kills:0,wartorn:false,leader:false,zone:"active",entered:turn};}
+function makeEquip(name){return {name,eff:EQUIP[name],zone:"active",charged:false,link:null};}
+const LB={1:10,2:30,3:50,4:70};
+function makePlayer(deck,name,rnd){
+  const p={name,deck:shuffle(deck.slice(),rnd),hand:[],active:[],passive:[],pcards:[],events:new Set(),war_turns:{},leader:null,lockout:false,lose:false,dark_ignore_used:false};
+  for(let i=0;i<5;i++)draw(p);
+  return p;
+}
+function draw(p){if(p.deck.length===0){p.lose=true;return;}p.hand.push(p.deck.pop());}
+const chars=p=>p.active.concat(p.passive,p.leader?[p.leader]:[]);
+const boardChars=p=>p.active.concat(p.passive);
+const activeSlotsUsed=p=>p.active.length+p.pcards.filter(e=>e.name&&e.eff&&e.zone==="active").length;
+const passiveSlotsUsed=p=>p.passive.length+p.pcards.filter(e=>!(e.name&&e.eff&&e.zone==="active")).length;
+const isEquipObj=e=>e&&typeof e==="object"&&e.eff!==undefined;
+function moveZone(p,u,z){const from=u.zone==="active"?p.active:p.passive;const i=from.indexOf(u);if(i>=0)from.splice(i,1);u.zone=z;(z==="active"?p.active:p.passive).push(u);}
+
+// ---------- stats ----------
+const hasWar=p=>p.events.has("War")||p.events.has("Holy War")||p.events.has("Goblin War");
+const linkedEquips=(p,u)=>p.pcards.filter(e=>isEquipObj(e)&&e.zone==="passive"&&e.link===u);
+function effAtk(p,u){
+  let a=u.t.atk;
+  if(u.leader)a+=LB[u.tier];
+  const aura=!has(u.t.abil,"no_aura");
+  if(aura&&chars(p).some(x=>has(x.t.abil,"aura_honathan"))&&has(u.t.affils,"Royal Army"))a+=10;
+  if(has(u.t.abil,"honathan_buff")&&chars(p).some(x=>has(x.t.abil,"aura_honathan")))a+=10;
+  if(aura&&chars(p).some(x=>has(x.t.abil,"aura_mages"))&&has(u.t.affils,"Mages Guild"))a+=10;
+  if(aura&&chars(p).some(x=>has(x.t.abil,"aura_goblin")&&x!==u)&&has(u.t.affils,"Goblin"))a+=10;
+  if(has(u.t.abil,"blood_money"))a+=10*u.kills;
+  if(has(u.t.abil,"war_atk")&&hasWar(p))a+=10;
+  if(has(u.t.abil,"forged_in_chains")&&u.wartorn)a+=20;
+  if(p.events.has("Rally to War")&&u.zone==="active"&&hasWar(p))a+=10;
+  if(p.events.has("Crusade")&&p.events.has("Holy War")&&comps(u.t.elem).includes("Light"))a+=10;
+  if(p.events.has("Horde Frenzy")&&p.events.has("Goblin War")&&has(u.t.affils,"Goblin"))a+=10;
+  for(const e of linkedEquips(p,u)){a+=e.eff.atk||0;if(e.eff.water_atk&&comps(u.t.elem).includes("Water"))a+=e.eff.water_atk;if(e.eff.war_atk&&hasWar(p))a+=e.eff.war_atk;}
+  return Math.max(0,a);
+}
+function effDef(p,u){
+  let d=u.t.deff;
+  if(u.leader)d+=LB[u.tier];
+  if(chars(p).some(x=>has(x.t.abil,"aura_honathan"))&&has(u.t.affils,"Royal Army")&&!has(u.t.abil,"no_aura"))d+=10;
+  if(has(u.t.abil,"honathan_buff")&&chars(p).some(x=>has(x.t.abil,"aura_honathan")))d+=10;
+  if(has(u.t.abil,"forged_in_chains")&&u.wartorn)d+=20;
+  if(p.events.has("Crusade")&&p.events.has("Holy War")&&comps(u.t.elem).includes("Light"))d+=10;
+  for(const e of linkedEquips(p,u))d+=e.eff.deff||0;
+  return Math.max(0,d);
+}
+function effMaxhp(p,u){let h=u.t.hp+(u.leader?LB[u.tier]:0);for(const e of linkedEquips(p,u))h+=e.eff.maxhp||0;return h;}
+function canAttack(p,u){
+  if(linkedEquips(p,u).some(e=>e.eff.cannot_attack))return false;
+  if(!u.wartorn)return true;
+  if(["war_child","immune_wartorn","forged_in_chains"].some(a=>has(u.t.abil,a)))return true;
+  if(linkedEquips(p,u).some(e=>e.eff.immune_wartorn))return true;
+  if(p.events.has("The Broken March"))return true;
+  return false;
+}
+function canBecomeWarTorn(p,u){return !has(u.t.abil,"cannot_become_wartorn")&&!linkedEquips(p,u).some(e=>e.eff.immune_wartorn);}
+
+// ---------- combat math ----------
+function strike(p,u,opp,tgt,atkOverride,element,parts){
+  parts=parts||1;
+  const el=element||u.t.elem;
+  const atk=atkOverride!=null?atkOverride:effAtk(p,u);
+  const dfn=effDef(opp,tgt);
+  let ignored=false;
+  if(darkVsLight(el,tgt.t.elem)&&!p.dark_ignore_used){ignored=true;p.dark_ignore_used=true;}
+  if(!ignored&&atk<=dfn){if(REC.on)REC.log(`  ${u.t.name} attacks ${tgt.t.name} — blocked (${atk} ≤ DEF ${dfn})`);return false;}
+  let base=ignored?atk:(atk-dfn);
+  let elBonus=0;
+  if(beats(el,tgt.t.elem)){elBonus=10*parts;base+=elBonus;}
+  if(has(u.t.abil,"high_atk_bonus")&&tgt.t.atk>=50)base+=20; // The Silent: +20 vs ATK 50+
+  tgt.hp-=base;
+  if(REC.on)REC.log(`  ${u.t.name} hits ${tgt.t.name} for ${base}${ignored?" (Dark pierces)":""}${elBonus?` (+${elBonus} element)`:""} → ${Math.max(0,tgt.hp)} HP`);
+  if(tgt.hp<=0){u.kills+=1;if(REC.on)REC.log(`  ✗ ${tgt.t.name} is KO'd`);
+    if(has(u.t.abil,"draw_on_ko_if_honathan")&&chars(p).some(x=>has(x.t.abil,"aura_honathan"))){draw(p);if(REC.on)REC.log(`  ${u.t.name} draws a card on the kill`);}
+    return true;}
+  return false;
+}
+function dealSolo(p,u,opp){
+  let targets=opp.active.slice();
+  if(has(u.t.abil,"hit_passive"))targets=targets.concat(opp.passive);
+  const leaderOpen=opp.leader&&opp.active.length===0&&!has(opp.leader.t.abil,"leader_protect_royal");
+  if(has(u.t.abil,"hit_leader")&&opp.leader)targets=targets.concat([opp.leader]);
+  else if(leaderOpen&&targets.length===0)targets=[opp.leader];
+  if(targets.length===0)return;
+  let best=null,bs=-1;
+  for(const tg of targets){
+    const a=effAtk(p,u),df=effDef(opp,tg);
+    const free=darkVsLight(u.t.elem,tg.t.elem)&&!p.dark_ignore_used;
+    const hit=free||a>df;let dmg=free?a:a-df;if(beats(u.t.elem,tg.t.elem))dmg+=10;
+    const sc=(hit&&dmg>=tg.hp)?100:(hit?dmg:-1);
+    if(sc>bs){bs=sc;best=tg;}
+  }
+  if(best)strike(p,u,opp,best);
+}
+function chainSizeNeeded(p,ch){let n=ch.size;if(inter(["Divine Channel","Ascended"],ch.affil)&&chars(p).some(x=>has(x.t.abil,"keeper_channel")))n=Math.max(1,n-1);return n;}
+function doChains(p,opp,used){
+  if(p.events.has("The Broken March")){
+    const wt=p.active.filter(u=>u.wartorn&&!used.has(u));
+    if(wt.length>=2&&opp.active.length){
+      const tgt=opp.active.reduce((a,b)=>b.hp>a.hp?b:a);
+      const s=wt.reduce((x,u)=>x+effAtk(p,u),0);
+      if(REC.on)REC.log(`  ⛓ Broken March chain (${wt.map(x=>x.t.name).join("+")}) vs ${tgt.t.name}`);
+      if(strike(p,wt[0],opp,tgt,s,wt[0].t.elem,wt.length))cleanup(opp);
+      for(const x of wt)used.add(x);
+      if(opp.leader&&opp.leader.hp<=0)return true;
+    }
+  }
+  for(const u of p.active.concat(p.passive)){
+    const ch=u.t.chain;if(!ch||used.has(u))continue;
+    let pool=(ch.active_only?p.active:p.active.concat(p.passive)).filter(x=>!used.has(x)&&x!==u);
+    if(p.leader&&!ch.active_only)pool.push(p.leader);
+    const affilParts=pool.filter(x=>inter(ch.affil,x.t.affils));
+    const parts=[u].concat(affilParts);
+    const need=chainSizeNeeded(p,ch);
+    const effCount=affilParts.length+(inter(ch.affil,u.t.affils)?1:0);
+    if(effCount<need)continue;
+    if(ch.aoe){
+      if(parts.filter(x=>inter(ch.affil,x.t.affils)).length<need)continue;
+      const dmg=parts.reduce((x,u2)=>x+effAtk(p,u2),0)*2;
+      const ps=new Set(parts);
+      if(REC.on)REC.log(`  ⛓ ${ch.name} AoE for ${dmg} to all non-chained`);
+      for(const side of [p,opp]){
+        for(const u2 of side.active.concat(side.passive))if(!ps.has(u2))u2.hp-=dmg;
+        if(side.leader&&!ps.has(side.leader))side.leader.hp-=dmg;
+      }
+      for(const x of parts)used.add(x);
+      cleanup(p);cleanup(opp);
+      if(opp.leader&&opp.leader.hp<=0)return true;
+      continue;
+    }
+    let targets=opp.active.length?opp.active.slice():((opp.leader&&opp.active.length===0)?[opp.leader]:[]);
+    if(targets.length===0){for(const x of parts)used.add(x);continue;}
+    const tgt=targets.reduce((a,b)=>b.hp>a.hp?b:a);
+    const s=parts.reduce((x,u2)=>x+effAtk(p,u2),0)+(ch.mod||0);
+    if(REC.on)REC.log(`  ⛓ ${ch.name} (${parts.map(x=>x.t.name).join("+")}) vs ${tgt.t.name} — ${s} ATK`);
+    if(strike(p,u,opp,tgt,s,u.t.elem,parts.length))cleanup(opp);
+    for(const x of parts)used.add(x);
+    if(opp.leader&&opp.leader.hp<=0)return true;
+  }
+  return false;
+}
+function combat(p,opp,turn){
+  if(turn<3)return;
+  p.dark_ignore_used=false;
+  const used=new Set();
+  if(doChains(p,opp,used))return;
+  for(const u of p.active.slice()){
+    if(used.has(u)||!canAttack(p,u))continue;
+    dealSolo(p,u,opp);cleanup(opp);
+    if(opp.leader&&opp.leader.hp<=0)return;
+  }
+  // The Leader may attack like any character, from the Leader slot (Ruleset: Leader System).
+  // Without this a board reduced to lone Leaders never trades damage -> games stall to the turn cap.
+  if(p.leader&&!used.has(p.leader)&&canAttack(p,p.leader)){
+    dealSolo(p,p.leader,opp);cleanup(opp);
+    if(opp.leader&&opp.leader.hp<=0)return;
+  }
+}
+
+// ---------- start of turn ----------
+function startOfTurn(p,opp,turn){
+  // Equipment links to a character on play and is discarded if its bearer is KO'd (no floating, no charge delay).
+  for(const u of chars(p))if(has(u.t.abil,"regrow")&&u.hp<effMaxhp(p,u))u.hp=Math.min(effMaxhp(p,u),u.hp+10);
+  // The Long Road: heal-over-time on a Disillusioned/Wandering bearer (modeled as a passive event flag).
+  if(p.events.has("The Long Road"))for(const u of boardChars(p))if(inter(["Wandering","Faithless"],u.t.affils)&&u.hp<effMaxhp(p,u)){u.hp=Math.min(effMaxhp(p,u),u.hp+10);break;}
+  // World-state war attrition: every war in play (on EITHER side) damages active-zone characters on BOTH sides.
+  const wars=activeWars([p,opp]);
+  if(wars.size){
+    for(const pl of [p,opp])for(const u of pl.active.slice()){const d=warDamageFrom(pl,u,wars);if(d>0){u.hp-=d;if(REC.on)REC.log(`${pl.name}: ${u.t.name} suffers ${d} war attrition → ${Math.max(0,u.hp)} HP`);}}
+    cleanup(p);cleanup(opp);
+  }
+  for(const w of Object.keys(p.war_turns)){
+    p.war_turns[w]+=1;
+    if(p.war_turns[w]>(w==="Holy War"?4:2)&&p.rnd()<0.5){p.events.delete(w);delete p.war_turns[w];if(REC.on)REC.log(`${p.name}: ${w} burns out`);}
+  }
+}
+function activeWars(players){const s=new Set();for(const pl of players)for(const w of ["War","Holy War","Goblin War"])if(pl.events.has(w))s.add(w);return s;}
+function warDamageFrom(pl,u,wars){
+  if(pl.events.has("Hardened Veterans")&&has(u.t.affils,"Royal Army"))return 0; // controller-side immunity
+  let d=0;
+  if(wars.has("War"))d+=10;
+  if(wars.has("Holy War"))d+=comps(u.t.elem).includes("Light")?0:(u.t.elem==="Dark"?20:10);
+  if(wars.has("Goblin War")&&!has(u.t.affils,"Goblin"))d+=10;
+  return d;
+}
+function warDamage(p,u){return warDamageFrom(p,u,activeWars([p]));} // controller-only, for AI shelter heuristics
+function cleanup(pl){
+  for(const lst of [pl.active,pl.passive]){
+    for(const u of lst.slice()){
+      if(u.hp<=0){for(const e of pl.pcards.filter(e=>isEquipObj(e)&&e.link===u)){pl.pcards.splice(pl.pcards.indexOf(e),1);if(REC.on)REC.log(`${pl.name}: ${e.name} is discarded (bearer KO'd)`);}lst.splice(lst.indexOf(u),1);if(pl.events.has("Horde Frenzy")&&has(u.t.affils,"Goblin")){draw(pl);if(REC.on)REC.log(`${pl.name}: Horde Frenzy — draws on a Goblin's death`);}}
+    }
+  }
+  if(pl.leader&&pl.leader.hp<=0)pl.lose=true;
+}
+// ---------- entry / on-KO / heal effects ----------
+function healLowest(p,amt){const cand=chars(p).filter(c=>c.hp<effMaxhp(p,c));if(!cand.length)return;const t=cand.reduce((a,b)=>(b.hp/effMaxhp(p,b))<(a.hp/effMaxhp(p,a))?b:a);t.hp=Math.min(effMaxhp(p,t),t.hp+amt);}
+const ENTRY={
+  "Mage Arlia":(p,opp,u)=>{for(const x of chars(p))if(x!==u&&has(x.t.affils,"Mages Guild"))x.hp-=10;},
+  "Embermaw":(p,opp,u)=>{if(opp.active.length){const t=opp.active.reduce((a,b)=>b.hp>a.hp?b:a);t.hp-=10;}},
+  "Lumenkit":(p,opp,u)=>healLowest(p,10),
+  "Hollowed Stag":(p,opp,u)=>healLowest(p,10),
+};
+function fireEntry(p,opp,u){const f=ENTRY[u.t.name];if(f){f(p,opp,u);if(REC.on)REC.log(`${p.name}: ${u.t.name} — entry effect`);if(opp)cleanup(opp);cleanup(p);}}
+
+// ---------- main phase ----------
+function playPhase(p,opp,turn){
+  let moved=true;
+  while(moved){
+    moved=false;
+    for(const card of p.hand.slice()){
+      if(card==="Metamorphosis"){
+        // One-shot: morph a T1 Wild you control into any T2 Wild in hand. Does not use the transformation action.
+        const cands=boardChars(p).concat(p.leader&&p.leader.tier===1&&has(p.leader.t.affils,"Wild")?[p.leader]:[]);
+        const src=cands.find(u=>has(u.t.affils,"Wild")&&u.t.tier===1);
+        const dest=p.hand.find(c=>CHARS[c]&&has(CHARS[c].affils,"Wild")&&CHARS[c].tier===2);
+        if(src&&dest){
+          const nu=makeUnit(CHARS[dest],turn);nu.kills=src.kills;nu.leader=src.leader;nu.zone=src.zone;nu.entered=src.entered;
+          for(const lst of [p.active,p.passive]){const i=lst.indexOf(src);if(i>=0)lst[i]=nu;}
+          for(const e of p.pcards)if(isEquipObj(e)&&e.link===src)e.link=nu;
+          if(src.leader)p.leader=nu;
+          p.hand.splice(p.hand.indexOf(dest),1);p.hand.splice(p.hand.indexOf("Metamorphosis"),1);
+          if(REC.on)REC.log(`${p.name}: Metamorphosis — ${src.t.name} becomes ${dest} (T2 Wild)`);
+          fireEntry(p,opp,nu);
+          moved=true;break;
+        }
+        continue;
+      }
+      if(CHARS[card]){
+        if(isHardCastable(card)&&CHARS[card].tier<=turn&&(!CHAR_PLAY[card]||CHAR_PLAY[card](p))){
+          const u=makeUnit(CHARS[card],turn);
+          // Characters may be played to the active OR passive zone. Shelter a body in passive when a war would
+          // chip it in active (e.g. to safely set up a Leader candidate during the opening, then elevate it).
+          const wantPassive=passiveSlotsUsed(p)<3&&warDamage(p,u)>0&&(turn<=2||!canAttack(p,u));
+          let placed=false;
+          if(wantPassive){u.zone="passive";p.passive.push(u);placed=true;}
+          else if(activeSlotsUsed(p)<3){p.active.push(u);placed=true;}
+          else if(passiveSlotsUsed(p)<3){u.zone="passive";p.passive.push(u);placed=true;}
+          if(placed){p.hand.splice(p.hand.indexOf(card),1);if(REC.on)REC.log(`${p.name}: plays ${card} (T${CHARS[card].tier}${u.zone==="passive"?", to passive":""})`);fireEntry(p,opp,u);moved=true;break;}
+        }
+      }else if(EQUIP[card]){
+        if(EQUIP_COND[card]&&!EQUIP_COND[card](p))continue; // play condition not met (e.g. Warmonger's needs a War)
+        if(passiveSlotsUsed(p)<3){
+          const cand=boardChars(p).filter(c=>c.zone==="active");const pool=cand.length?cand:boardChars(p);
+          if(pool.length){const e=makeEquip(card);e.zone="passive";e.charged=true;e.link=pool.reduce((a,b)=>effAtk(p,b)>effAtk(p,a)?b:a);p.pcards.push(e);e.link.hp=Math.min(effMaxhp(p,e.link),e.link.hp);p.hand.splice(p.hand.indexOf(card),1);if(REC.on)REC.log(`${p.name}: equips ${card} to ${e.link.t.name}`);moved=true;break;}
+        }
+      }else if(ONPLAY[card]){
+        const cand=boardChars(p).filter(c=>c.hp<effMaxhp(p,c));
+        if(cand.length){const tgt=cand.reduce((a,b)=>b.hp<a.hp?b:a);tgt.hp=Math.min(effMaxhp(p,tgt),tgt.hp+ONPLAY[card].heal);if(REC.on)REC.log(`${p.name}: ${card} heals ${tgt.t.name}`);}
+        p.hand.splice(p.hand.indexOf(card),1);moved=true;break;
+      }else if(PERSIST.has(card)&&card!=="Taken Prisoner"){
+        if(p.events.has(card))continue;
+        if(card==="Crusade"&&!p.events.has("Holy War"))continue;
+        if(card==="Horde Frenzy"&&!p.events.has("Goblin War"))continue;
+        if((card==="Rally to War"||card==="Hardened Veterans")&&!hasWar(p))continue;
+        if(passiveSlotsUsed(p)>=3)continue;
+        p.events.add(card);p.pcards.push(card);
+        if(["War","Holy War","Goblin War"].includes(card))p.war_turns[card]=0;
+        if(card==="Holy War"){for(const pl of [p,opp]){if(p.rnd()<0.5){const v=pl.active.find(u=>canBecomeWarTorn(pl,u));if(v){v.wartorn=true;if(REC.on)REC.log(`${pl.name}: ${v.t.name} captured (War-Torn) by Holy War`);}}}}
+        if(REC.on)REC.log(`${p.name}: plays ${card}`);
+        p.hand.splice(p.hand.indexOf(card),1);moved=true;break;
+      }
+    }
+  }
+  while(p.hand.includes("Taken Prisoner")&&hasWar(p)){
+    const tgt=boardChars(p).find(u=>!u.wartorn&&canBecomeWarTorn(p,u)&&(["forged_in_chains","war_child"].some(a=>has(u.t.abil,a))||p.events.has("The Broken March")));
+    if(!tgt)break;
+    tgt.wartorn=true;p.hand.splice(p.hand.indexOf("Taken Prisoner"),1);
+    if(REC.on)REC.log(`${p.name}: Taken Prisoner → ${tgt.t.name} is War-Torn`);
+  }
+}
+function transform(p,opp,turn){
+  if(p.lockout)return;
+  // Leader is a transform candidate too (prioritized): upgrades always allowed; sidegrades only at T1/T2;
+  // downgrades not allowed for a Leader. Per Ruleset "Leader transformation restrictions". Still 1/turn.
+  const cands=(p.leader?[p.leader]:[]).concat(boardChars(p));
+  for(const u of cands){
+    for(const [dest,cost] of u.t.upg){
+      if(!p.hand.includes(dest))continue;
+      if(u.leader){
+        const dt=CHARS[dest].tier;
+        if(dt<u.tier)continue;              // Leaders may not downgrade
+        if(dt===u.tier&&u.tier>2)continue;  // Leaders sidegrade only at T1/T2
+      }
+      const items=p.hand.filter(c=>T2ITEMS.has(c));
+      if(cost.named&&!p.hand.includes(cost.named))continue;
+      if((cost.items||0)>items.length)continue;
+      if((cost.kills||0)>u.kills)continue;
+      if(cost.need_war&&!hasWar(p))continue;
+      if(cost.disillusion&&!p.hand.includes("Disillusioned"))continue;
+      if(cost.taken_prisoner&&!hasWar(p))continue;
+      if(cost.named)p.hand.splice(p.hand.indexOf(cost.named),1);
+      for(let i=0;i<(cost.items||0);i++){const idx=p.hand.findIndex(c=>T2ITEMS.has(c));p.hand.splice(idx,1);}
+      if(cost.disillusion)p.hand.splice(p.hand.indexOf("Disillusioned"),1);
+      p.hand.splice(p.hand.indexOf(dest),1);
+      const nu=makeUnit(CHARS[dest],turn);nu.kills=u.kills;nu.leader=u.leader;nu.zone=u.zone;nu.entered=u.entered;
+      if(has(nu.t.affils,"War-Torn"))nu.wartorn=true;
+      for(const lst of [p.active,p.passive]){const i=lst.indexOf(u);if(i>=0)lst[i]=nu;}
+      for(const e of p.pcards)if(isEquipObj(e)&&e.link===u)e.link=nu;
+      if(u.leader)p.leader=nu;
+      if(REC.on)REC.log(`${p.name}: transforms ${u.t.name} → ${dest}${u.leader?" (Leader — tier bonus now +"+LB[nu.tier]+")":""}`);
+      fireEntry(p,opp,nu);
+      // Transformation may route the new form between zones (Ruleset: a character may move to passive
+      // via its transformation action). Shelter a non-attacker from active war attrition; send an attacker to the front.
+      if(!nu.leader){
+        if(!canAttack(p,nu)&&warDamage(p,nu)>0&&nu.zone==="active"&&passiveSlotsUsed(p)<3){moveZone(p,nu,"passive");if(REC.on)REC.log(`${p.name}: ${dest} shelters in the passive zone (safe from war attrition)`);}
+        else if(canAttack(p,nu)&&nu.zone==="passive"&&activeSlotsUsed(p)<3){moveZone(p,nu,"active");if(REC.on)REC.log(`${p.name}: ${dest} moves up to the active zone`);}
+      }
+      return;
+    }
+  }
+}
+function elevate(p,turn){
+  const elig=boardChars(p).filter(u=>u.entered<=turn-1);
+  if(elig.length===0){p.lockout=true;return;}
+  const best=elig.reduce((a,b)=>{const ka=[a.tier,a.t.atk+a.t.hp],kb=[b.tier,b.t.atk+b.t.hp];return(kb[0]>ka[0]||(kb[0]===ka[0]&&kb[1]>ka[1]))?b:a;});
+  for(const lst of [p.active,p.passive]){const i=lst.indexOf(best);if(i>=0)lst.splice(i,1);}
+  best.leader=true;best.zone="leader";p.leader=best;p.lockout=false;
+  if(REC.on)REC.log(`${p.name}: elevates ${best.t.name} to Leader`);
+}
+
+// ---------- game ----------
+function noCharactersLeft(p){if(p.leader||p.active.length||p.passive.length)return false;return !p.deck.concat(p.hand).some(c=>CHARS[c]);}
+
+function game(dA,dB,rnd,recorder){
+  REC.on=!!recorder;REC.log=recorder?recorder.log:function(){};
+  const A=makePlayer(dA,"A",rnd);A.rnd=rnd;
+  const B=makePlayer(dB,"B",rnd);B.rnd=rnd;
+  const players=[A,B];let active=0;
+  const finish=(w,turn,why)=>{if(recorder)recorder.snapshot(players[0],players[1],turn,{w,why});return[w,turn,why];};
+  if(recorder)recorder.snapshot(A,B,1,null);
+  for(let t=1;t<=72;t++){
+    const turn=Math.floor((t+1)/2);
+    const p=players[active],opp=players[1-active];
+    if(recorder)recorder.beginPly(t,turn,p.name);
+    startOfTurn(p,opp,turn);
+    if(p.leader&&p.leader.hp<=0)return finish(opp.name,turn,"leader");
+    if(boardChars(p).length===0&&p.pcards.length===0){draw(p);draw(p);if(REC.on)REC.log(`${p.name}: empty board — draws 2`);}
+    else{draw(p);}
+    if(p.lose)return finish(opp.name,turn,"deckout");
+    playPhase(p,opp,turn);
+    transform(p,opp,turn);
+    combat(p,opp,turn);
+    if(opp.leader&&opp.leader.hp<=0)return finish(p.name,turn,"leader");
+    cleanup(opp);
+    if(opp.leader&&opp.leader.hp<=0)return finish(p.name,turn,"leader");
+    if(noCharactersLeft(opp))return finish(p.name,turn,"wiped");
+    if(p.leader===null&&turn>=2)elevate(p,turn);
+    if(turn>=6&&p.leader===null)return finish(opp.name,turn,"noleader");
+    if(recorder)recorder.endPly(A,B,turn);
+    active=1-active;
+  }
+  return finish("draw",36,"timeout");
+}
+
+// ---------- batch ----------
+function runMatch(nameA,nameB,n,seed){
+  const fa=DECKS[nameA],fb=DECKS[nameB];
+  const wins={},ends={};let lenSum=0;const lens=[];
+  let s=seed>>>0;
+  for(let i=0;i<n;i++){
+    const rnd=mulberry32(s=(s+0x9E3779B9)>>>0);
+    const first=i%2;
+    const [w,length,why]=first===0?game(fa(),fb(),rnd,null):game(fb(),fa(),rnd,null);
+    let key;
+    if(w==="draw")key="draw";
+    else key=((w==="A")===(first===0))?nameA:nameB;
+    wins[key]=(wins[key]||0)+1;ends[why]=(ends[why]||0)+1;lenSum+=length;lens.push(length);
+  }
+  lens.sort((a,b)=>a-b);
+  return {wins,ends,avg:lenSum/n,median:lens[Math.floor(n/2)],n};
+}
+
+
+// =================== recorder / snapshots (browser watch mode) ===================
+function snapUnit(p,u){
+  return {name:u.t.name,elem:u.t.elem,tier:u.t.tier,hp:Math.max(0,u.hp),maxhp:effMaxhp(p,u),
+    atk:effAtk(p,u),def:effDef(p,u),wartorn:u.wartorn,kills:u.kills,leader:u.leader,
+    equips:linkedEquips(p,u).map(e=>e.name)};
+}
+function snap(p){
+  const charging=p.pcards.filter(e=>isEquipObj(e)&&e.zone==="active").map(e=>e.name);
+  return {name:p.name,leader:p.leader?snapUnit(p,p.leader):null,
+    active:p.active.map(u=>snapUnit(p,u)),passive:p.passive.map(u=>snapUnit(p,u)),
+    charging,events:[...p.events],hand:p.hand.length,deck:p.deck.length,lockout:p.lockout};
+}
+function makeRecorder(){
+  const frames=[];let cur=null;
+  return {
+    frames,
+    log(s){if(cur)cur.lines.push(s);},
+    beginPly(t,turn,actor){cur={t,turn,actor,lines:[]};},
+    endPly(A,B,turn){if(!cur)return;cur.A=snap(A);cur.B=snap(B);cur.result=null;frames.push(cur);cur=null;},
+    snapshot(A,B,turn,result){
+      if(result===null&&!cur){frames.push({t:0,turn:1,actor:null,lines:["Game start — each player shuffles a 30-card deck and draws 5."],A:snap(A),B:snap(B),result:null});return;}
+      if(!cur)cur={t:turn*2,turn,actor:null,lines:[]};
+      cur.A=snap(A);cur.B=snap(B);cur.result=result;frames.push(cur);cur=null;
+    }
+  };
+}
+
+// =================== watch UI ===================
+const $=id=>document.getElementById(id);
+const DECKNAMES=Object.keys(DECKS);
+const state={frames:[],i:0,a:"War",b:"Loyalist",timer:null};
+
+function fillSelect(sel,val){DECKNAMES.forEach(n=>{const o=document.createElement("option");o.value=n;o.textContent=n;sel.appendChild(o);});sel.value=val;}
+fillSelect($("selA"),"War");fillSelect($("selB"),"Loyalist");
+fillSelect($("cA"),"War");fillSelect($("cB"),"Goblin");
+
+function elemClass(e){return {"Fire":"fire","Water":"water","Earth":"earth","Wind":"wind","Light":"light","Dark":"dark","Dark & Light":"dl"}[e]||"";}
+function unitCard(u){
+  if(!u)return '<div class="empty">—</div>';
+  const pct=u.maxhp>0?Math.max(0,Math.min(100,u.hp/u.maxhp*100)):0;
+  return `<div class="card ${elemClass(u.elem)} ${u.leader?'leader':''} ${u.hp<=0?'dead':''}" data-card="${u.name}">
+    <div class="cn">${u.name}</div>
+    <div class="row"><span class="tier">T${u.tier}</span><span class="el">${u.elem}</span>${u.wartorn?'<span class="wt">War-Torn</span>':''}${u.kills?`<span class="kills">${u.kills} kill${u.kills>1?'s':''}</span>`:''}</div>
+    <div class="hpbar"><div class="hpfill" style="width:${pct}%"></div><span class="hptext">${u.hp} / ${u.maxhp}</span></div>
+    <div class="stats"><span class="atk">⚔ ${u.atk}</span><span class="def">🛡 ${u.def}</span></div>
+    ${u.equips.length?`<div class="equips">${u.equips.map(e=>`<span class="eq" data-card="${e}">${e}</span>`).join('')}</div>`:''}
+  </div>`;
+}
+function renderSide(el,s,deckName,acting){
+  el.className="side"+(acting?" acting":"");
+  const charging=s.charging.map(c=>`<div class="card charging"><div class="cn">${c}</div><div class="chg">⚙ charging</div></div>`).join('');
+  el.innerHTML=`
+    <div class="sidehead"><span class="deckname">${deckName}</span>${acting?'<span class="ev">acting</span>':''}${s.lockout?'<span class="lock">LEADERLESS</span>':''}<span class="counts">hand ${s.hand} · deck ${s.deck}</span></div>
+    <div class="zone leaderzone"><div class="zlabel">Leader</div><div class="slots">${unitCard(s.leader)}</div></div>
+    <div class="zone"><div class="zlabel">Active</div><div class="slots">${s.active.map(unitCard).join('')+charging || '<div class="empty">empty</div>'}</div></div>
+    <div class="zone"><div class="zlabel">Passive</div><div class="slots">${s.passive.map(unitCard).join('')||'<div class="empty">empty</div>'}</div></div>
+    ${s.events.length?`<div class="events">${s.events.map(e=>`<span class="ev" data-card="${e}">${e}</span>`).join('')}</div>`:''}`;
+}
+const WHY={leader:"Leader defeated",deckout:"opponent decked out",noleader:"failed to elevate a Leader by turn 6",wiped:"all characters eliminated",timeout:"turn cap reached — draw"};
+function fmtLine(s){let c="";if(/KO'd|burns out/.test(s))c="ko";if(/^[AB]:/.test(s))c="ply";return `<span class="${c}">${linkify(s)}</span>`;}
+
+function renderEventsPanel(fr){
+  const col=(side,name)=>{
+    const items=side.events.length
+      ? side.events.map((e,i)=>{const ct=CARD_TEXT[e]||{};return `<div class="epitem${i===0?' first':''}"><span class="epname cardlink" data-card="${e}">${e}</span><div class="epeff">${(ct.text||'').replace(/</g,'&lt;')}</div></div>`;}).join('')
+      : '<div class="epnone">none in play</div>';
+    return `<div class="epcol"><h4>${name}</h4>${items}</div>`;
+  };
+  $("eventsPanel").innerHTML=`<div class="ephead">Persistent events in play</div><div class="epgrid">${col(fr.A,state.a)}${col(fr.B,state.b)}</div>`;
+}
+function renderFrame(){
+  const fr=state.frames[state.i];if(!fr)return;
+  const acting=fr.actor;
+  renderSide($("sideA"),fr.A,state.a,acting==="A");
+  renderSide($("sideB"),fr.B,state.b,acting==="B");
+  renderEventsPanel(fr);
+  const ply=fr.actor?` · ${fr.actor==="A"?state.a:state.b}'s ply`:"";
+  $("frameLabel").textContent=`Turn ${fr.turn}${ply}  (frame ${state.i+1}/${state.frames.length})`;
+  $("curlog").innerHTML=(fr.lines&&fr.lines.length?fr.lines:["(no actions)"]).map(fmtLine).join("\n");
+  // full log up to current frame
+  let full=[];
+  for(let k=0;k<=state.i;k++){const f=state.frames[k];const head=f.actor?`▸ Turn ${f.turn} — ${f.actor==="A"?state.a:state.b}`:`▸ ${f.lines&&f.lines[0]||"Game start"}`;full.push(`<span class="ply">${head}</span>`);(f.lines||[]).forEach(l=>full.push(fmtLine(l)));}
+  $("fulllog").innerHTML=full.join("\n");$("fulllog").scrollTop=$("fulllog").scrollHeight;
+  const b=$("banner");
+  if(fr.result){const w=fr.result.w;const name=w==="draw"?"Draw":(w==="A"?state.a:state.b);b.className="banner show";b.textContent=`🏁 ${name==="Draw"?"Draw":name+" wins"} — ${WHY[fr.result.why]||fr.result.why} (turn ${fr.turn}).`;}
+  else b.className="banner";
+  $("bFirst").disabled=$("bPrev").disabled=state.i===0;
+  $("bNext").disabled=$("bLast").disabled=state.i>=state.frames.length-1;
+}
+function newWatchGame(){
+  stopAuto();
+  if(!$("lockSeed").checked)$("seedW").value=Math.floor(Math.random()*1e9);
+  const a=$("selA").value,b=$("selB").value,seed=(parseInt($("seedW").value)||1)>>>0;
+  const rec=makeRecorder();
+  game(DECKS[a](),DECKS[b](),mulberry32(seed),rec);
+  state.frames=rec.frames;state.i=0;state.a=a;state.b=b;
+  renderFrame();
+}
+function go(i){state.i=Math.max(0,Math.min(state.frames.length-1,i));renderFrame();}
+function stopAuto(){if(state.timer){clearInterval(state.timer);state.timer=null;$("autoBtn").textContent="▶▶ Auto";}}
+function toggleAuto(){
+  if(state.timer){stopAuto();return;}
+  if(state.i>=state.frames.length-1)state.i=0;
+  $("autoBtn").textContent="⏸ Pause";
+  const ms=Math.max(120,parseInt($("speed").value)||600);
+  state.timer=setInterval(()=>{if(state.i>=state.frames.length-1){stopAuto();return;}go(state.i+1);},ms);
+}
+$("newGame").onclick=newWatchGame;
+$("bFirst").onclick=()=>{stopAuto();go(0);};
+$("bPrev").onclick=()=>{stopAuto();go(state.i-1);};
+$("bNext").onclick=()=>{stopAuto();go(state.i+1);};
+$("bLast").onclick=()=>{stopAuto();go(state.frames.length-1);};
+$("autoBtn").onclick=toggleAuto;
+
+// deck lists
+function deckListHTML(name){
+  const counts={};DECKS[name]().forEach(c=>counts[c]=(counts[c]||0)+1);
+  const cat=c=>CHARS[c]?"Characters":(EQUIP[c]?"Items / Equipment":(FUEL[c]?"Items / Equipment":(ONPLAY[c]?"Items / Equipment":"Events")));
+  const groups={"Characters":[],"Items / Equipment":[],"Events":[]};
+  Object.keys(counts).sort().forEach(c=>groups[cat(c)].push(`${c}${counts[c]>1?` ×${counts[c]}`:""}`));
+  let h=`<div><b>${name}</b>`;
+  for(const g of ["Characters","Items / Equipment","Events"]){if(groups[g].length){h+=`<div class="dt">${g}</div><ul>${groups[g].map(x=>`<li>${x}</li>`).join("")}</ul>`;}}
+  return h+`</div>`;
+}
+$("decklist").innerHTML=DECKNAMES.map(deckListHTML).join("");
+
+// =================== batch UI ===================
+function batchBlock(a,b,n,seed){
+  const r=runMatch(a,b,n,seed);
+  const tot=Object.values(r.wins).reduce((x,y)=>x+y,0)||1;
+  const wa=r.wins[a]||0,wb=r.wins[b]||0,dr=r.wins.draw||0;
+  const pa=(wa/tot*100),pb=(wb/tot*100),pd=(dr/tot*100);
+  const col={War:"#e8552f",Loyalist:"#e8c43a",Goblin:"#5fa83f"};
+  const ends=Object.entries(r.ends).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`${WHY[k]||k}: ${(v/tot*100).toFixed(0)}%`).join(" · ");
+  return `<div class="matchblock">
+    <h3>${a} <span class="vs">vs</span> ${b} <span class="meta">(${n} games)</span></h3>
+    <div class="winbar">
+      <span style="width:${pa}%;background:${col[a]||'#888'}">${pa>=8?a+' '+pa.toFixed(0)+'%':''}</span>
+      ${pd>0?`<span style="width:${pd}%;background:#555;color:#ddd">${pd>=8?'draw '+pd.toFixed(0)+'%':''}</span>`:''}
+      <span style="width:${pb}%;background:${col[b]||'#888'}">${pb>=8?b+' '+pb.toFixed(0)+'%':''}</span>
+    </div>
+    <table><tr><th>Deck</th><th>Wins</th><th>Win rate</th></tr>
+      <tr><td>${a}</td><td>${wa}</td><td><b>${pa.toFixed(1)}%</b></td></tr>
+      <tr><td>${b}</td><td>${wb}</td><td><b>${pb.toFixed(1)}%</b></td></tr>
+      ${dr?`<tr><td>draw</td><td>${dr}</td><td>${pd.toFixed(1)}%</td></tr>`:''}
+    </table>
+    <p class="meta">avg length ${r.avg.toFixed(1)} turns · median ${r.median} · decided by — ${ends}</p>
+  </div>`;
+}
+$("runAll").onclick=()=>{
+  const n=Math.max(20,parseInt($("batchN").value)||400),seed=(parseInt($("batchSeed").value)||7)>>>0;
+  $("batchResults").innerHTML='<p class="meta">running…</p>';
+  setTimeout(()=>{$("batchResults").innerHTML=[["War","Loyalist"],["War","Goblin"],["Loyalist","Goblin"]].map(([a,b])=>batchBlock(a,b,n,seed)).join("");},20);
+};
+$("runCustom").onclick=()=>{
+  const a=$("cA").value,b=$("cB").value,n=Math.max(20,parseInt($("cN").value)||400),seed=(parseInt($("batchSeed").value)||7)>>>0;
+  $("batchResults").innerHTML='<p class="meta">running…</p>';
+  setTimeout(()=>{$("batchResults").innerHTML=batchBlock(a,b,n,seed)+$("batchResults").innerHTML.replace('<p class="meta">running…</p>','');},20);
+};
+
+// =================== card inscriptions (printed text from the canonical CSVs) ===================
+const CARD_TEXT={
+ "Arlia, Destined Trainee":{af:"Destined, Trainee",fl:"A young girl with incredible potential. Hailing from Urnakle, she entered the trainee program with a chip on her shoulder and a desire to make her people proud."},
+ "Mage Arlia":{af:"Mages Guild, Destined",a:"Unstable Resonance — When she enters play, deal 10 damage to each of your other Mages Guild characters. While she is in play, your Mages Guild characters have +10 ATK.",ti:"Arlia, Destined Trainee + Instructional Tome",fl:"A young mage who seeks greater strength to protect those she loves."},
+ "Squire Arlia":{af:"Kaethlaan Knights, Destined",a:"Me for You — Once per opponent's turn, when an attack is declared at an individual target, redirect it to this unit and give it +10 DEF during damage calculation.",ti:"Arlia, Destined Trainee + Instructional Sword"},
+ "Arlia, Youngest Archmage":{af:"Mages Guild, The Archive, Destined, Attuned",tm:true,a:"Magical Shield — If your opponent targets a card you control with a destroying effect, negate it and destroy it.",ch:"Consortium — Chain 2 (Mages Guild / Attuned).",ti:"Mage Arlia + 2 T2 Items",fl:"The youngest Archmage in centuries, with abilities and wisdom far beyond her years."},
+ "Captain Arlia":{full:"Captain Arlia of the Royal Army",af:"Kaethlaan Knights, Royal Army, King's Court (Kaethlaan), Destined",tm:true,a:"My Liege — If King Honathan is in play: +30 ATK and DEF, cannot be targeted by manipulation, and cannot change control.",ch:"Triangle Attack — Chain 3 Kaethlaan Knights. Damage = sum of all ATK +30.",ti:"Squire Arlia + 2 T2 Items",fl:"The Captain of the Royal Army. She has sworn lifelong fealty to the crown."},
+ "The Wandering Acolyte Arlia":{af:"Destined, Wandering",a:"Seeker — Once per turn, look at the top 3 cards of your deck and arrange them in any order.",ti:"Mage Arlia + Disillusioned + Opportunity",fl:"A disillusioned former Mages Guild member, searching for a truth greater than theirs."},
+ "The Ascended":{af:"Ascended, Wandering, The Divine Channel",tm:true,a:"Absolute Truth — Her HP/ATK/DEF each equal (items discarded during transformation) ×20. Stat riders on consumed items don't apply; ability-grant riders still do.",ch:"The Channel — Chain 2+ (Divine Channel / Ascended). AoE: deal (sum of ATK ×2) to all characters on both sides except chained ones; those defeated are Disgraced.",ti:"The Wandering Acolyte Arlia + 1+ T3 Items",fl:"A former mage once called Arlia who found the greatest truth of the universe."},
+ "King Honathan":{full:"King Honathan of Kaethlaan",af:"Royal Army, Kaethlaan Knights, King's Court (Kaethlaan)",tm:true,a:"The Crown's Command — Play requirement: control 2+ other Kaethlaan characters. While in play, your Royal Army and King's Court characters have +10 ATK/+10 DEF. Leader rule: while you control a Royal Army character, he cannot be attacked.",ch:"Rally the Realm — Chain 2-3 Royal Army. Damage = sum of all ATK +20.",fl:"Forty years he has kept the hearth lit. Pray you never learn what it cost him."},
+ "Kael, Destined Trainee":{af:"Destined, Trainee",fl:"A street boy with a desire for revenge on those who looked down on his family."},
+ "Swiftblade Kael":{af:"Royal Army, Destined",ti:"Kael, Destined Trainee + Back-Alley Blade",fl:"One of the most gifted swordsmen in the Royal Army; cynical and aggressive."},
+ "Kael the Shadow":{af:"Royal Army, Destined",a:"Assassin's Reach — May attack opposing passive-zone characters, not only the active zone. While King Honathan is in play, +10 ATK.",ti:"Swiftblade Kael",fl:"A Royal Army assassin who reports directly to King Honathan. Quiet and precise."},
+ "The King's Blade":{af:"Royal Army, King's Court (Kaethlaan), Destined",tm:true,a:"The Crown's Edge — May attack any opposing character or the opposing Leader, ignoring zone restrictions. While King Honathan is in play, +20 ATK; when this KOs a character, draw a card.",ti:"Kael the Shadow",fl:"He has no name now — only an edge, and a hand the crown trusts to hold it."},
+ "Kael the Captured":{af:"War-Torn, Destined",ti:"Swiftblade Kael + Taken Prisoner",fl:"A former royal soldier captured during war. Biding his time to escape."},
+ "Kael the Runaway":{af:"Faithless, Destined",a:"Masterless — Cannot benefit from your affiliation auras.",ti:"Kael the Captured",fl:"A former royal soldier who escaped to chase his own fate."},
+ "Kael the Killer":{af:"Mercenary, Faithless, Destined",a:"Blood Money — +10 ATK for each banked kill (kills persist across transformations). Cannot benefit from your affiliation auras.",ti:"Kael the Runaway",fl:"A notorious criminal who kills for the highest bidder."},
+ "The Silent":{af:"Wandering, Faithless, Destined",tm:true,a:"The Worthy Opponent — Must attack each combat phase if able. May target passive-zone characters, and deals +20 damage to characters with ATK 50+. Cannot benefit from your affiliation auras.",ti:"Kael the Killer",fl:"The most renowned swordsman in all the land, seeking a worthy opponent."},
+ "Illyego, the Orphan":{af:"Faithless",a:"War Child — May attack even while War-Torn.",fl:"He does not remember a year without a war in it."},
+ "Illyego, the Soldier":{af:"Mercenary, Faithless",a:"War Child — May attack even while War-Torn.",ti:"Illyego, the Orphan (only while a War is in play)",fl:"They handed him a spear before he could spell his name."},
+ "Illyego, the Conqueror":{af:"Faithless",tm:true,a:"War Child — May attack even while War-Torn. +10 ATK while a War is in play.",ti:"Illyego, the Soldier (after banking 3 kills)",fl:"He stopped waiting for the war to end and made it his."},
+ "Goblin Soldier":{af:"Goblin",fl:"One of many. That is the point."},
+ "Goblin Lieutenant":{af:"Goblin",ti:"Goblin Soldier",fl:"Promoted by surviving."},
+ "Goblin Captain":{af:"Goblin",tm:true,a:"Command — While in play, your other Goblin characters have +10 ATK.",ti:"Goblin Lieutenant",fl:"He counts heads before a battle and after. The numbers rarely match."},
+ "Lor'oak Goblin Grunt":{af:"Goblin",fl:"Numbers were always Lor'oak's only plan."},
+ "Lor'oak Goblin Commander":{af:"Goblin",tm:true,ch:"Rush — Chain 2 Goblin (active zone only). Damage = sum of all ATK vs target's DEF.",ti:"Lor'oak Goblin Grunt",fl:"Forward. Always forward. There are always more."},
+ "Touched Child Hresheeba":{af:"Attuned",fl:"A child who answers questions no one asked aloud."},
+ "Old Maid Hresheeba":{af:"Divine Channel, Attuned",tm:true,a:"Keeper of the Channel — While in play, your Divine Channel chains may be initiated with one fewer participant (minimum 1).",ti:"Touched Child Hresheeba",fl:"She has kept the door so long she has forgotten which side she is on."},
+ "Channel Being":{af:"Divine Channel",tm:true,fl:"Not a person. A doorway that learned to stand up."},
+ "A Man Bred for War":{af:"Mercenary",tm:true,a:"Forged in Chains — While War-Torn, he may attack and has +20 ATK and +20 DEF.",fl:"They made him for one thing. Then they were surprised by it."},
+ "Cinderpel":{af:"Wild",tm:true,fl:"A coal that learned to run."},
+ "Pyrnit":{af:"Wild",tm:true,fl:"Small, furious, briefly."},
+ "Bogfang":{af:"Wild",tm:true,fl:"The swamp grew teeth."},
+ "Stoneback":{af:"Wild",tm:true,fl:"Patience with a shell."},
+ "Murlifect":{af:"Wild",tm:true,a:"Regrow — At the start of your turn, Murlifect heals 10.",fl:"Take a piece; it grows two back."},
+ "Galewing":{af:"Wild",tm:true,fl:"It rides the storm it makes."},
+ "Glimmermoth":{af:"Wild",tm:true,fl:"Drawn to every lantern; burned by none."},
+ "Lumenkit":{af:"Wild",tm:true,a:"Warmth — When Lumenkit enters play, heal one of your characters 10.",fl:"A small warmth that follows you home."},
+ "Sootcrawler":{af:"Wild",tm:true,fl:"It lives where the fire has been."},
+ "Embermaw":{af:"Wild",tm:true,a:"Searing Entry — When Embermaw enters play, deal 10 damage to one opposing active character.",fl:"The coal grew a mouth."},
+ "Craghide":{af:"Wild",tm:true,a:"Regrow — At the start of your turn, Craghide heals 10.",fl:"Older than the road that goes around it."},
+ "Skirrl":{af:"Wild",tm:true,ch:"Gust — Chain 2 Wild (active zone only). Damage = sum of all ATK vs target's DEF.",fl:"A gust with opinions."},
+ "Tidewretch":{af:"Wild",tm:true,fl:"It remembers being a river."},
+ "Hollowed Stag":{af:"Wild",tm:true,a:"Tending Light — When Hollowed Stag enters play, heal one of your characters 10.",fl:"Antlers like a chapel with no roof."},
+ "Gravecreep":{af:"Wild",tm:true,fl:"What the battlefield keeps."},
+ "Metamorphosis":{type:"Event · one-shot",tier:"T1",text:"Transform a T1 Wild you control into any T2 Wild in your hand. Destination must be in hand. Does not use your transformation action. Keeps banked kills; element becomes the new form's. Consumed on use.",fl:"Everything wild is also becoming something."},
+ // --- remaining roster characters ---
+ "Thestral":{af:"Wild",tm:true,fl:"Only those who have seen death can see them coming."},
+ "Barangrang":{af:"Wild",tm:true,fl:"Gone before you finish blinking."},
+ "Tidewhisk":{af:"Wild",tm:true,fl:"It laughs in a language of bubbles."},
+ "Frostnip":{af:"Wild",tm:true,fl:"A cold little nip in the dark."},
+ "Second in Command Kael":{af:"Royal Army, Destined",tm:true,a:"At Her Side — While you control Arlia, you may redirect attacks declared at Arlia to Second in Command Kael, and he has +10 ATK and +10 DEF.",ti:"Swiftblade Kael, while you control Arlia at T3+ (Arlia not consumed)",fl:"Arlia's second and confidant. Loyal to a fault."},
+ "The Acolyte Illyego":{af:"Wandering",tm:true,a:"At Peace — The Acolyte Illyego cannot become War-Torn (he has left war behind).",ti:"Illyego, the Soldier + Disillusioned",fl:"He buried the spear at a shrine and did not dig it up."},
+ "Arlia, Kael's Wife":{af:"Sworn, Destined",ti:"Arlia (T2) + Kael at T2/T3 (marriage / paired transformation)",fl:"Marriage form — tier, stats, ability not yet designed."},
+ "Kael, Arlia's Husband":{af:"Sworn, Destined",a:"Married synergy with Arlia (not yet designed).",ti:"Swiftblade Kael + Arlia at T2 (marriage / paired)",fl:"A boy from the streets with a changed perspective on life. Says every day is a gift."},
+ "Mourning Widower, Kael":{af:"Forsaken, Destined",ti:"Kael, Arlia's Husband (when Arlia, Kael's Wife dies)",fl:"With his wife dead, Kael has sworn to avenge her. He fights with abandon."},
+ // --- remaining items ---
+ "Reagent Pouch":{type:"Item · on play",tier:"T2",text:"When you play this item, draw a card.",fl:"A little of everything, in case the world asks for it."},
+ "Apprentice's Grimoire":{type:"Item · transform fuel",tier:"T2",text:"When consumed in a transformation, the resulting character enters with +10 ATK.",fl:"The second book is always heavier than the first."},
+ "Squire's Oathblade":{type:"Item · transform fuel",tier:"T2",text:"When consumed in a transformation, the resulting character enters with +10 DEF.",fl:"Sworn steel remembers every vow it was forged under."},
+ "Staff of Aelion":{type:"Item",tier:"T2",text:"Equipped character gains +20 ATK, and +10 more if their element is Fire.",fl:"Crafted by the Stewards of Aelion, attuned to fire mages."},
+ "Carrion Blade":{type:"Item",tier:"T2",text:"Equipped character gains +10 ATK.",fl:"A blade designed for protecting the living from the hungry dead."},
+ "Archmage's Focus":{type:"Item · transform fuel",tier:"T3",text:"When consumed in a transformation, the resulting character enters with +20 ATK.",fl:"Forged for a hand that has stopped trembling."},
+ "Relic of the Forsaken":{type:"Item · transform fuel",tier:"T3",text:"When consumed in a transformation, the resulting character enters with +10 to all stats.",fl:"Someone gave up everything to make this. It remembers the trade."},
+ "Banner of the Realm":{type:"Item · transform fuel",tier:"T3",text:"When consumed in a transformation, the resulting character gains the chain ability 'Rally — Chain 2 Kaethlaan Knights. Damage equals sum of ATK.'",fl:"It is not the cloth they follow. It is the idea the cloth insists upon."},
+ "Feliefnir":{type:"Item",tier:"T3",text:"Equipped character gains +30 HP, +30 ATK, +10 DEF, and cannot be targeted by opponent's equipped card effects.",fl:"A legendary tome said to kill lesser magic users."},
+ "Protection of The Divine":{type:"Item",tier:"T3",text:"Equipped character cannot be affected by item or event effects, friendly or hostile. If the bearer is Disgraced, this item is destroyed.",fl:"—"},
+ "Goblin War-Banner":{type:"Item",tier:"T2",text:"Equip only to a Goblin. Equipped Goblin has +10 ATK; while a Goblin War is in play, +30 ATK instead.",fl:"Raised by the biggest goblin who lived long enough to raise it."},
+ "Sanctified Blade":{type:"Item",tier:"T2",text:"Equip only to a Light character. +10 ATK. While Holy War is in play, it cannot be targeted by Dark characters' attacks.",fl:"Forged in a chapel, quenched in a war."},
+ // --- remaining events ---
+ "Opportunity":{type:"Event · one-shot",tier:"T2",text:"Play only if you control a Disillusioned character. Take one additional transformation action this turn.",fl:"Every locked door has a moment it forgets to stay locked."},
+ "A Crisis of Faith":{type:"Persistent Event",tier:"T2",text:"Attach to one of your characters; it becomes Disillusioned. When this enters, draw a card. While attached, that character has +10 ATK and -10 DEF.",fl:"Doubt does not make her careful. It makes her reckless."},
+ "Cast Out":{type:"Persistent Event",tier:"T2",text:"Attach to one of your characters; it becomes Disillusioned and loses all Kingdom-internal affiliations.",fl:"The order does not exile its own. It simply stops saying their names."},
+ "The Long Road":{type:"Persistent Event · Light",tier:"T3",text:"Attach to a Disillusioned or Wandering character. At the start of each of your turns it heals 10. While attached, it cannot bear equipment.",fl:"The road provides. The road also takes."},
+ "Plague":{type:"Persistent Event · Dark",tier:"T2",text:"While in play, reduce the Max HP of all characters on both sides by 10 (cap-only rule).",fl:"It does not ask which side you are on."},
+ "Medical Advancement":{type:"Persistent Event · Kaethlaan",tier:"T2",text:"While in play, increase the Max HP of your side's characters by 10.",fl:"An honest kingdom answers death with bookkeeping."},
+ "Call of the Channel":{type:"Event · one-shot",tier:"T3",text:"Discard a card, then search your deck for a card with The Divine Channel affiliation, reveal it, add it to hand, and shuffle.",fl:"—"},
+ "Shield Wall":{type:"Persistent Event",tier:"T2",text:"Choose a Kaethlaan Knight you control. While in play, that character gains DEF equal to its DEF minus 30 (minimum +0).",fl:"—"},
+ "Instructional Tome":{type:"Item",tier:"T1",text:"Equipped character gains +10 ATK.",fl:"A simple primer for the training of mages."},
+ "Instructional Sword":{type:"Item",tier:"T1",text:"Equipped character gains +10 ATK.",fl:"A simple sword for the training of knights."},
+ "Back-Alley Blade":{type:"Item",tier:"T1",text:"Equipped character gains +10 ATK.",fl:"The blade a street boy taught himself to kill with — the Army only noticed later."},
+ "Twin Daggers":{type:"Item",tier:"T2",text:"Equipped character gains +10 ATK and +10 DEF.",fl:"Two answers to every question."},
+ "Tidecaller's Pearl":{type:"Item",tier:"T2",text:"Equipped character gains +20 ATK, and +10 more if their element is Water.",fl:"It hums when the tide turns."},
+ "Tower Shield":{type:"Item",tier:"T2",text:"Equipped character gains +20 DEF and -10 ATK.",fl:"You will not get past it. You will not get much done behind it either."},
+ "Vital Charm":{type:"Item",tier:"T2",text:"Equipped character gains +20 HP and -10 ATK.",fl:"It keeps the heart beating. It does not make the hand quicker."},
+ "Berserker's Brand":{type:"Item",tier:"T2",text:"Equipped character gains +30 ATK and -20 DEF.",fl:"The brand burns away everything but forward."},
+ "Aegis Plate":{type:"Item",tier:"T3",text:"Equipped character gains +40 DEF and +20 HP, but -20 ATK and cannot be declared as an attacker.",fl:"A fortress you can wear. A fortress does not charge."},
+ "Warmonger's Resolve":{type:"Item",tier:"T2",text:"Play only while a War is in play. Equipped character has +20 ATK while a War is in play.",fl:"Some men are only at peace when the world is not."},
+ "Unbroken Will":{type:"Item",tier:"T2",text:"Equipped character cannot become War-Torn. If it is already War-Torn, it may attack anyway.",fl:"Chains are a kind of question. He kept answering no."},
+ "Whetstone":{type:"Item · transform fuel",tier:"T1",text:"When consumed in a transformation, the resulting character enters with +10 ATK.",fl:"A blade is just an opinion until it is sharp."},
+ "Buckler":{type:"Item · transform fuel",tier:"T1",text:"When consumed in a transformation, the resulting character enters with +10 DEF.",fl:"Small, round, and the reason he still has a face."},
+ "Warlord's Spoils":{type:"Item · transform fuel",tier:"T3",text:"When consumed in a transformation, the resulting character enters with +10 to all stats.",fl:"To the strong, the leavings of the strong."},
+ "Field Rations":{type:"Item · on play",tier:"T1",text:"When you play this item, heal one of your characters 10.",fl:"Hardtack and resolve."},
+ "War":{type:"Persistent Event · War",tier:"T2",text:"While in play, at the start of each turn deal 10 damage to each character in an active zone on either side. Leaders unaffected. After two of your turns, coin-flip each turn; on heads it ends.",fl:"It starts at a border and ends at a grave."},
+ "Holy War":{type:"Persistent Event · Light · War",tier:"T3",text:"On entry each player flips a coin; on heads they make one of their own characters War-Torn. Start-of-turn attrition to active zones: Light-including takes 0, pure-Dark 20, others 10. Leaders unaffected. Burnout flips from your 4th turn.",fl:"Every banner swears it fights for heaven."},
+ "Goblin War":{type:"Persistent Event · War",tier:"T2",text:"While in play, at the start of each turn deal 10 damage to each non-Goblin character in an active zone on either side. Goblins and Leaders unaffected. Burnout flips from your 2nd turn.",fl:"They do not take ground. They take everything, slowly."},
+ "Taken Prisoner":{type:"Persistent Event",tier:"T2",text:"Play only while a War is in play. Attach to one of your characters; it becomes War-Torn (cannot attack). Consumed when it transforms along a War-Torn path.",fl:"The war did not kill him. It did something slower."},
+ "Disillusioned":{type:"Persistent Event",tier:"T2",text:"Attach to one of your characters; it becomes Disillusioned and cannot benefit from your affiliation auras. Consumed when it transforms along a chosen-branch path.",fl:"The banners she once saluted are only cloth now."},
+ "Rally to War":{type:"Persistent Event",tier:"T2",text:"Play only while a War is in play. While a War is in play, your characters in an active zone have +10 ATK.",fl:"The drum does not ask who wants to march."},
+ "Crusade":{type:"Persistent Event · Light",tier:"T3",text:"Play only while Holy War is in play. While Holy War is in play, your Light characters have +10 ATK and +10 DEF.",fl:"The faithful do not fear the fire. They are the fire."},
+ "Horde Frenzy":{type:"Persistent Event",tier:"T2",text:"Play only while a Goblin War is in play. While a Goblin War is in play, your Goblin characters have +10 ATK, and whenever one of your Goblins is KO'd, draw a card.",fl:"More. There are always more."},
+ "Hardened Veterans":{type:"Persistent Event",tier:"T3",text:"Play only while a War is in play. While a War is in play, your Royal Army characters take no damage from War effects.",fl:"They have buried every kind of friend. War is just weather now."},
+ "The Broken March":{type:"Persistent Event",tier:"T3",text:"While in play, your War-Torn characters may attack. Once per turn, if you control 2+ War-Torn characters, you may attack one target with them together for the sum of their ATK.",fl:"The chains came off all at once."},
+};
+let NAME_RE=null;
+function buildNameRe(){const names=Object.keys(CARD_TEXT).filter(n=>n!=="War").sort((a,b)=>b.length-a.length).map(n=>n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));NAME_RE=new RegExp('('+names.join('|')+')','g');}
+function linkify(s){let t=s.replace(/&/g,'&amp;').replace(/</g,'&lt;');if(!NAME_RE)buildNameRe();return t.replace(NAME_RE,m=>`<span class="cardlink" data-card="${m}">${m}</span>`);}
+function showCard(name){
+  const ct=CARD_TEXT[name]||{},ch=CHARS[name];
+  let h=`<div class="cmname">${name}</div>`;
+  if(ct.full&&ct.full!==name)h+=`<div class="cmsub">${ct.full}</div>`;
+  if(ch||ct.af){
+    const elem=ch?ch.elem:(ct.elem||"—"),tier=ch?("T"+ch.tier):(ct.tier||"TBD");
+    h+=`<div class="cmmeta">${elem} · ${tier}${ct.tm?' · TERMINAL':''}</div>`;
+    if(ch)h+=`<div class="cmstats"><span class="hp">❤ ${ch.hp}</span><span class="atk">⚔ ${ch.atk}</span><span class="def">🛡 ${ch.deff}</span></div>`;
+    else h+=`<div class="cmstats"><span class="cmlabel">Stats not yet designed (TBD)</span></div>`;
+    if(ct.af)h+=`<div class="cmrow"><span class="cmlabel">Affiliations</span>${ct.af}</div>`;
+    if(ct.a)h+=`<div class="cmab"><span class="cmlabel">Ability</span>${ct.a}</div>`;
+    if(ct.ch)h+=`<div class="cmab"><span class="cmlabel">Chain</span>${ct.ch}</div>`;
+    if(ct.ti)h+=`<div class="cmrow"><span class="cmlabel">Transforms from</span>${ct.ti}</div>`;
+    if(ct.fl)h+=`<div class="cmflav">"${ct.fl}"</div>`;
+  }else if(ct.type){
+    h+=`<div class="cmmeta">${ct.type}${ct.tier?' · '+ct.tier:''}</div>`;
+    if(ct.text)h+=`<div class="cmab">${ct.text}</div>`;
+    if(ct.fl)h+=`<div class="cmflav">"${ct.fl}"</div>`;
+  }else{h+=`<div class="cmmeta">No inscription on file.</div>`;}
+  $("cardModalBody").innerHTML=h;$("cardModal").classList.add("show");
+}
+function closeCard(){$("cardModal").classList.remove("show");}
+// long-press (hold ~450ms) and tap/click both open inscriptions
+let pressTimer=null,longFired=false;
+const cardSel='.card[data-card],.ev[data-card],.eq[data-card]';
+document.addEventListener("pointerdown",e=>{const el=e.target.closest(cardSel);if(!el)return;longFired=false;pressTimer=setTimeout(()=>{longFired=true;stopAuto();showCard(el.getAttribute("data-card"));},450);});
+document.addEventListener("pointerup",()=>clearTimeout(pressTimer));
+document.addEventListener("pointermove",()=>clearTimeout(pressTimer));
+document.addEventListener("pointercancel",()=>clearTimeout(pressTimer));
+document.addEventListener("click",e=>{
+  const link=e.target.closest(".cardlink");if(link){stopAuto();showCard(link.getAttribute("data-card"));return;}
+  if(e.target.id==="cardModalClose"||e.target.id==="cardModal"){closeCard();return;}
+  const el=e.target.closest(cardSel);if(el){if(longFired){longFired=false;return;}stopAuto();showCard(el.getAttribute("data-card"));}
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeCard();});
+
+// ---------- card pool browser + coverage ----------
+function classifyCard(name){const ct=CARD_TEXT[name]||{};if(CHARS[name]||ct.af)return "Characters";if((ct.type||"").startsWith("Item"))return "Items";return "Events";}
+function renderPool(filter){
+  filter=(filter||"").toLowerCase();
+  const groups={Characters:[],Items:[],Events:[]};
+  Object.keys(CARD_TEXT).sort().forEach(n=>{if(!filter||n.toLowerCase().includes(filter))groups[classifyCard(n)].push(n);});
+  let h="";
+  for(const g of ["Characters","Items","Events"]){if(!groups[g].length)continue;h+=`<div class="poolgroup"><h4>${g} (${groups[g].length})</h4><div class="poolchips">${groups[g].map(n=>`<span class="poolchip cardlink" data-card="${n}">${n}</span>`).join("")}</div></div>`;}
+  $("cardpool").innerHTML=h||'<p class="meta">No cards match.</p>';
+}
+function renderCoverage(){
+  $("coverage").innerHTML=`<div class="cov">
+  <b>Simulation coverage</b> — what the engine resolves automatically (it plays both sides with a greedy AI, so effects requiring a human choice are approximated):<br><br>
+  <b>Rules — modeled:</b> <span class="ok">slot economy · 2-turn opening &amp; no early combat · elevation from active/passive · Leader slot, attack, protection &amp; tier bonus · Leader transformation restrictions · elemental wheel + Light/Dark · transformation (upgrade/sidegrade/branch, destination-in-hand, item/kill/war/event gates) · one transform per turn · chains (size, affiliation, formula, zone, element amp, AoE+Disgrace, Keeper size reduction) · T1-only hard-cast + play permissions · play to active/passive · equipment link-on-play, play-conditions, discard-on-bearer-KO · world-state wars hit both sides · War-Torn cost/immunity/attack-through · deck-out, wipe, no-Leader, Leader-kill wins</span><br><br>
+  <b>Card effects — modeled:</b> <span class="ok">stat auras (Honathan, Mages Guild, Goblin Captain, Crusade, Horde Frenzy, Rally to War) · entry triggers (Mage Arlia, Embermaw, Lumenkit, Hollowed Stag) · on-KO draws (King's Blade, Horde Frenzy) · heal-over-time (Regrow, The Long Road) · Blood Money kill-scaling · The Silent forced-attack + bonus vs high-ATK · element-conditional equips · cannot-become-War-Torn · Holy War capture · The Broken March War-Torn chain</span><br><br>
+  <b>Approximated / not yet modeled:</b> <span class="approx">on-entry effects not in the sample decks · Max-HP modifiers (Plague / Medical Advancement / Vital Charm shown but cap-only math not fully simulated) · redirect (Me for You, At Her Side) · negate-and-destroy &amp; immunities (Magical Shield, Protection of the Divine, Feliefnir) — no destroy/manipulation cards exist to trigger them · The Ascended variable stats · deck-search (Call of the Channel, Seeker) · mulligan &amp; hand-size (open rules questions)</span> <span class="no">· love-road marriage cards (stats TBD — not simulatable yet)</span><br><br>
+  <span class="meta">All ${Object.keys(CARD_TEXT).length} cards are browsable below — tap any to read its inscription.</span>
+  </div>`;
+}
+renderCoverage();renderPool("");
+const cs=$("cardSearch");if(cs)cs.oninput=e=>renderPool(e.target.value);
+
+// tabs
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));
+  document.querySelectorAll(".panel").forEach(x=>x.classList.remove("on"));
+  t.classList.add("on");$(t.dataset.tab).classList.add("on");if(t.dataset.tab!=="watch")stopAuto();
+});
+
+// boot
+newWatchGame();
+</script>
+</body>
+</html>
