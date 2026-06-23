@@ -1,0 +1,28 @@
+Name,Tier,Type,Text,Flavor,Notes
+Instructional Tome,T1,Item,Equipped character gains +10 ATK.,A simple primer for the training of mages.,"Gates Arlia, Destined Trainee -> Mage Arlia"
+Instructional Sword,T1,Item,Equipped character gains +10 ATK.,A simple sword for the training of knights.,"Gates Arlia, Destined Trainee -> Squire Arlia"
+Reagent Pouch,T2,Item,"When you play this item, draw a card.","A little of everything, in case the world asks for it.",Neutral fuel
+Apprentice's Grimoire,T2,Item,"When consumed in a transformation, the resulting character enters with +10 ATK.",The second book is always heavier than the first.,
+Squire's Oathblade,T2,Item,"When consumed in a transformation, the resulting character enters with +10 DEF.",Sworn steel remembers every vow it was forged under.,
+Staff of Aelion,T2,Item,"Equipped character gains +20 ATK, and an additional +10 ATK if their element is Fire.","Crafted by the Stewards of Aelion, this staff is particularly attuned to fire mages.",
+Carrion Blade,T2,Item,Equipped character gains +10 ATK.,A blade designed for protecting the living from the hungry dead.,
+Archmage's Focus,T3,Item,"When consumed in a transformation, the resulting character enters with +20 ATK.",Forged for a hand that has stopped trembling.,
+Relic of the Forsaken,T3,Item,"When consumed in a transformation, the resulting character enters with +10 to all stats.",Someone gave up everything to make this. It remembers the trade.,
+Banner of the Realm,T3,Item,"When consumed in a transformation, the resulting character gains the chain ability ""Rally - Chain 2 Kaethlaan Knights. Damage equals sum of ATK.""",It is not the cloth they follow. It is the idea the cloth insists upon.,
+Feliefnir,T3,Item,"Equipped character gains +30 HP, +30 ATK, and +10 DEF. Equipped character cannot be targeted by opponent's equipped card effects.",A legendary tome that is said to kill lesser magic users.,
+Protection of The Divine,T3,Item,"Equipped character cannot be affected by item or event effects, whether friendly or hostile. If the equipped character is Disgraced, this item is destroyed.",,"RECONSTRUCTED from v0.7 session (was not in the prior project CSV). Mutual immunity (also blocks your own item/event effects on the bearer) is INTENTIONAL, not an oversight. Destruction-on-Disgrace is a functional downside clause (items are directly destroyable per the locked ruling). CONFIRM exact wording and flavor."
+Back-Alley Blade,T1,Item,Equipped character gains +10 ATK.,The blade a street boy taught himself to kill with — the Army only noticed later.,"Gates Kael, Destined Trainee -> Swiftblade Kael. Kael's T1 weapon-gate, parallel to Instructional Sword/Tome."
+Warmonger's Resolve,T2,Item,"Play only while a War is in play. Equipped character has +20 ATK while a War is in play.",Some men are only at peace when the world is not.,"Wartime-buff family (any-war, open). Stat +20 ATK. Power to be settled by playtest."
+Unbroken Will,T2,Item,"Equipped character cannot become War-Torn. If it is already War-Torn, it may attack anyway.",Chains are a kind of question. He kept answering no.,"Wartime-buff family. War-Torn tech: immunity + attack-through-War-Torn (the two spinoffs in one equip). Not war-gated, so it pre-empts capture. Softens War-Torn's cost by design - watch in playtest."
+Goblin War-Banner,T2,Item,"Equip only to a Goblin character. Equipped Goblin has +10 ATK. While a Goblin War is in play, it has +30 ATK instead.",Raised by the biggest goblin who lived long enough to raise it.,"Wartime-buff family (Goblin-locked + Goblin-War-specific scaling, +10 -> +30). Race-restricted equip."
+Sanctified Blade,T2,Item,"Equip only to a Light character. Equipped character has +10 ATK. While Holy War is in play, it cannot be targeted by Dark characters' attacks.","Forged in a chapel, quenched in a war.","Wartime-buff family (Light-locked + Holy-War rider). Stat + non-stat protection vs Dark. Playtest the anti-Dark clause."
+Whetstone,T1,Item,"When consumed in a transformation, the resulting character enters with +10 ATK.",A blade is just an opinion until it is sharp.,Cheap T1 transform fuel.
+Buckler,T1,Item,"When consumed in a transformation, the resulting character enters with +10 DEF.","Small, round, and the reason he still has a face.",Cheap T1 transform fuel.
+Field Rations,T1,Item,"When you play this item, heal one of your characters 10.",Hardtack and resolve.,Cheap on-play heal/sustain.
+Twin Daggers,T2,Item,Equipped character gains +10 ATK and +10 DEF.,Two answers to every question.,Modest balanced equip; no downside.
+Tidecaller's Pearl,T2,Item,"Equipped character gains +20 ATK, and an additional +10 ATK if their element is Water.",It hums when the tide turns.,Water analog to Staff of Aelion.
+Tower Shield,T2,Item,Equipped character gains +20 DEF and -10 ATK.,You will not get past it. You will not get much done behind it either.,Defensive equip with an offense downside.
+Vital Charm,T2,Item,Equipped character gains +20 HP and -10 ATK.,It keeps the heart beating. It does not make the hand quicker.,HP equip with an offense downside.
+Berserker's Brand,T2,Item,Equipped character gains +30 ATK and -20 DEF.,The brand burns away everything but forward.,Aggro closer for fragile attackers; big offense for big exposure.
+Aegis Plate,T3,Item,"Equipped character gains +40 DEF and +20 HP, but has -20 ATK and cannot be declared as an attacker.",A fortress you can wear. A fortress does not charge.,Pure wall with a hard downside.
+Warlord's Spoils,T3,Item,"When consumed in a transformation, the resulting character enters with +10 to all stats.","To the strong, the leavings of the strong.",Strong T3 transform fuel; T3-gated.
