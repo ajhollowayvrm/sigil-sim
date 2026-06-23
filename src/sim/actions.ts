@@ -208,6 +208,8 @@ function events(p: Player, opp: Player): GameAction[] {
   if (slot && p.hand.includes("Hardened Veterans") && !p.events.has("Hardened Veterans") && hasWar(p))
     out.push(addPersist("Hardened Veterans"));
   if (slot && p.hand.includes("The Broken March") && !p.events.has("The Broken March")) out.push(addPersist("The Broken March"));
+  if (slot && p.hand.includes("Close the Gates") && !p.events.has("Close the Gates")) out.push(addPersist("Close the Gates"));
+  if (slot && p.hand.includes("War College") && !p.events.has("War College")) out.push(addPersist("War College"));
 
   // Taken Prisoner: consumed to make one of your own bodies War-Torn (needs a War).
   if (p.hand.includes("Taken Prisoner") && hasWar(p)) {

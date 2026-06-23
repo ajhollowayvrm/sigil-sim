@@ -32,7 +32,24 @@ export const CHAR_FLAGS: Record<string, string[]> = {
   "Craghide": ["regrow"],
   "The Acolyte Illyego": ["cannot_become_wartorn"],
   "Second in Command Kael": ["redirect_arlia"], // §6: approximated (no destroy/redirect cards exist)
+  // ----- new Kaethlaan roster -----
+  "Brutal Fighter Strango": ["forged_in_chains"], // enters War-Torn (affil) but fights through it, +20
+  "Kaethlaan Archer": ["hit_passive"],
+  "Kaethlaan Sniper": ["hit_passive", "high_atk_bonus"],
+  "Thomas the Brave": ["cannot_become_wartorn"], // too brave to be captured
+  "Hierophant of the Channel": ["keeper_channel"], // shortens the Divine Channel chain
 };
+
+/** Kaethlaan-sphere affiliations — membership for Banner / Close the Gates / Reinforce. */
+export const KAETHLAAN_AFFILS: Set<string> = new Set([
+  "Kaethlaan",
+  "Royal Army",
+  "Mages Guild",
+  "Divine Channel",
+  "Kaethlaan Knights",
+  "King's Court (Kaethlaan)",
+  "King's Court",
+]);
 
 // Entry trigger key per character (resolved in engine/effects.ts).
 export const CHAR_ENTRY: Record<string, string> = {
@@ -40,6 +57,7 @@ export const CHAR_ENTRY: Record<string, string> = {
   "Embermaw": "dmg_opp_active", // Searing Entry: 10 to one opposing active
   "Lumenkit": "heal_lowest",
   "Hollowed Stag": "heal_lowest",
+  "Channel Adept": "heal_lowest", // Channeled Mending
 };
 
 // Structured transformation cost keyed by DESTINATION form. The graph topology
@@ -67,6 +85,15 @@ export const TRANSFORM_COST: Record<string, TransformCost> = {
   "Lor'oak Goblin Commander": {},
   "Old Maid Hresheeba": {},
   "Second in Command Kael": { requires_arlia: true },
+  // ----- new Kaethlaan transform lines (every cost is item-based) -----
+  "Kaethlaan Knight": { items: 1 },
+  "Sword of the Realm": { items: 2 },
+  "Channel Adept": { items: 1 },
+  "Hierophant of the Channel": { items: 2 },
+  "Brutal Fighter Strango": { items: 1 },
+  "Kaethlaan Sniper": { items: 1 },
+  "Soldier Thomas": { items: 1 },
+  "Thomas the Brave": { items: 2 },
 };
 
 // Play-permission for non-T1 standalones: minimum OTHER board characters required
@@ -106,6 +133,15 @@ export const EQUIP: Record<string, EquipEff> = {
   "Goblin Shiv": { atk: 10 },
   "Goblin Cleaver": { atk: 20, deff: 10 },
   "Warboss' Maul": { atk: 40, deff: 10 },
+  // Kaethlaan equipment
+  "Kaethlaan Banner": { deff: 10 }, // + grants an army-wide Kaethlaan aura (see aura_kaethlaan)
+  "Kaethlaan Bow": { atk: 20 },
+  "Kaethlaan Broadsword": { atk: 20, deff: 10 },
+};
+
+/** Items restricted to a bearer of a given affiliation (vs name-substring signatures). */
+export const ITEM_BEARER_AFFIL: Record<string, string> = {
+  "Kaethlaan Banner": "Kaethlaan", // Kaethlaan-sphere bearers only (matched via KAETHLAAN_AFFILS)
 };
 
 // Item forging cost, keyed by the DESTINATION item (the graph topology — which item
@@ -146,10 +182,12 @@ export const FUEL: Record<string, EquipEff> = {
   Whetstone: { atk: 10 },
   Buckler: { deff: 10 },
   "Warlord's Spoils": { all: 10 },
+  "Royal Warrant": {}, // wild transform fuel: substitutes for any required NAMED item (Kael/Arlia gates)
 };
 
 export const ONPLAY: Record<string, EquipEff> = {
   "Field Rations": { heal: 10 },
+  "Reinforce the Front Lines": { heal: 20 }, // reinforce a Kaethlaan unit
 };
 
 // Persistent events that occupy a passive slot.
@@ -164,6 +202,8 @@ export const PERSIST: Set<string> = new Set([
   "Horde Frenzy",
   "Hardened Veterans",
   "The Broken March",
+  "Close the Gates", // Kaethlaan units immune to War attrition
+  "War College", // your Royal Army characters transform for 1 fewer item
 ]);
 
 // Printed play-conditions on equipment (e.g. Warmonger's Resolve needs a War).

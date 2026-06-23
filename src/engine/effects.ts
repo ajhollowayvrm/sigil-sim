@@ -4,7 +4,7 @@
 
 import { comps } from "./elements";
 import { log, logging } from "./log";
-import { boardChars, chars, draw, effMaxhp, isEquipObj } from "./stats";
+import { boardChars, chars, draw, effMaxhp, isEquipObj, isKaethlaan } from "./stats";
 import type { Player, Unit } from "./types";
 
 const has = (arr: string[], x: string) => arr.includes(x);
@@ -19,6 +19,7 @@ export function activeWars(players: Player[]): Set<string> {
 
 export function warDamageFrom(pl: Player, u: Unit, wars: Set<string>): number {
   if (pl.events.has("Hardened Veterans") && has(u.t.affils, "Royal Army")) return 0; // controller-side immunity
+  if (pl.events.has("Close the Gates") && isKaethlaan(u)) return 0; // Kaethlaan held the wall
   let d = 0;
   if (wars.has("War")) d += 10;
   if (wars.has("Holy War")) d += comps(u.t.elem).includes("Light") ? 0 : u.t.elem === "Dark" ? 20 : 10;

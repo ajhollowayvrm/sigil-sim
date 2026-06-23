@@ -4,6 +4,13 @@
 import { comps } from "./elements";
 import type { Card, Equip, Player, Unit } from "./types";
 import { EQUIP, getItemTier, itemAnyTier, itemBearerInclude } from "../data/loadCards";
+import { ITEM_BEARER_AFFIL, KAETHLAAN_AFFILS } from "../data/effects-map";
+
+/** True if a unit belongs to the Kaethlaan sphere (Royal Army / Mages Guild / Divine
+ *  Channel / King's Court / Kaethlaan…). Used by Banner, Close the Gates, Reinforce. */
+export function isKaethlaan(u: Unit): boolean {
+  return u.t.affils.some((a) => KAETHLAAN_AFFILS.has(a));
+}
 
 /** Leader tier bonus (Ruleset: Leader System) — applied to ALL stats by current tier. */
 export const LB: Record<number, number> = { 1: 10, 2: 30, 3: 50, 4: 70 };
@@ -52,6 +59,8 @@ export function effAtk(p: Player, u: Unit): number {
   if (p.events.has("Rally to War") && u.zone === "active" && hasWar(p)) a += 10;
   if (p.events.has("Crusade") && p.events.has("Holy War") && comps(u.t.elem).includes("Light")) a += 10;
   if (p.events.has("Horde Frenzy") && p.events.has("Goblin War") && has(u.t.affils, "Goblin")) a += 10;
+  // Kaethlaan Banner: a borne standard rallies the whole Kaethlaan army (+10 ATK).
+  if (aura && isKaethlaan(u) && p.pcards.some((e) => isEquipObj(e) && e.name === "Kaethlaan Banner")) a += 10;
   for (const e of linkedEquips(p, u)) {
     a += e.eff.atk || 0;
     if (e.eff.water_atk && comps(u.t.elem).includes("Water")) a += e.eff.water_atk;
@@ -96,6 +105,11 @@ export function canBecomeWarTorn(p: Player, u: Unit): boolean {
 export function canEquip(item: string, bearer: Unit): boolean {
   const inc = itemBearerInclude(item);
   if (inc && !bearer.t.name.includes(inc)) return false;
+  const reqAffil = ITEM_BEARER_AFFIL[item];
+  if (reqAffil) {
+    const ok = reqAffil === "Kaethlaan" ? isKaethlaan(bearer) : has(bearer.t.affils, reqAffil);
+    if (!ok) return false;
+  }
   if (itemAnyTier(item) || has(bearer.t.abil, "bears_any_tier")) return true;
   return getItemTier(item) <= bearer.tier;
 }

@@ -10,12 +10,20 @@ import type { Equip, ItemCost, Player, TransformCost, Unit } from "./types";
 
 const has = (arr: string[], x: string) => arr.includes(x);
 
+/** War College reduces the item cost of a Royal Army transform by one. */
+function itemsNeeded(p: Player, u: Unit, cost: TransformCost): number {
+  let n = cost.items || 0;
+  if (n > 0 && p.events.has("War College") && u.t.affils.includes("Royal Army")) n -= 1;
+  return Math.max(0, n);
+}
+
 /** True if `u` can transform into `dest` paying `cost` from `p`'s hand right now. */
 export function canAfford(p: Player, u: Unit, dest: string, cost: TransformCost): boolean {
   if (!p.hand.includes(dest)) return false;
   const items = p.hand.filter((c) => T2ITEMS.has(c));
-  if (cost.named && !p.hand.includes(cost.named)) return false;
-  if ((cost.items || 0) > items.length) return false;
+  // Royal Warrant is a wild stand-in for any required NAMED item (Kael/Arlia gates).
+  if (cost.named && !p.hand.includes(cost.named) && !p.hand.includes("Royal Warrant")) return false;
+  if (itemsNeeded(p, u, cost) > items.length) return false;
   if ((cost.kills || 0) > u.kills) return false;
   if (cost.need_war && !hasWarLocal(p)) return false;
   if (cost.disillusion && !p.hand.includes("Disillusioned")) return false;
@@ -31,8 +39,13 @@ function hasWarLocal(p: Player): boolean {
 
 /** Apply a (validated) transformation: consume costs, swap the form, fire entry. */
 export function applyTransform(p: Player, opp: Player, turn: number, u: Unit, dest: string, cost: TransformCost): Unit {
-  if (cost.named) p.hand.splice(p.hand.indexOf(cost.named), 1);
-  for (let i = 0; i < (cost.items || 0); i++) {
+  if (cost.named) {
+    // pay with the printed item if held, otherwise spend a Royal Warrant for it.
+    const named = p.hand.includes(cost.named) ? cost.named : "Royal Warrant";
+    const ni = p.hand.indexOf(named);
+    if (ni >= 0) p.hand.splice(ni, 1);
+  }
+  for (let i = 0, need = itemsNeeded(p, u, cost); i < need; i++) {
     const idx = p.hand.findIndex((c) => T2ITEMS.has(c));
     if (idx >= 0) p.hand.splice(idx, 1);
   }

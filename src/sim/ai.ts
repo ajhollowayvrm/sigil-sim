@@ -32,6 +32,7 @@ import {
   canEquip,
   chars,
   effMaxhp,
+  isKaethlaan,
   hasWar,
   makeEquip,
   makeUnit,
@@ -293,6 +294,34 @@ function tryWorldWars(p: Player, opp: Player): void {
   }
 }
 
+/** Kaethlaan support persistents — value not visible to a one-ply score, so they're
+ *  handled here: shield the line under an active war, cheapen the Royal Army climb. */
+function tryKaethlaanSupport(p: Player, opp: Player): void {
+  if (
+    p.hand.includes("Close the Gates") &&
+    !p.events.has("Close the Gates") &&
+    passiveSlotsUsed(p) < 3 &&
+    activeWars([p, opp]).size > 0 &&
+    chars(p).some(isKaethlaan)
+  ) {
+    p.events.add("Close the Gates");
+    p.pcards.push("Close the Gates");
+    p.hand.splice(p.hand.indexOf("Close the Gates"), 1);
+    if (logging()) log(`${p.name}: plays Close the Gates`);
+  }
+  if (
+    p.hand.includes("War College") &&
+    !p.events.has("War College") &&
+    passiveSlotsUsed(p) < 3 &&
+    chars(p).some((u) => has(u.t.affils, "Royal Army") && u.t.upg.length > 0)
+  ) {
+    p.events.add("War College");
+    p.pcards.push("War College");
+    p.hand.splice(p.hand.indexOf("War College"), 1);
+    if (logging()) log(`${p.name}: plays War College`);
+  }
+}
+
 /** Taken Prisoner: deliberately capture our own attack-through-War-Torn bodies (or
  *  any body while The Broken March is out) to switch on their wartime payoff. */
 function tryTakenPrisoner(p: Player): void {
@@ -336,6 +365,7 @@ export const greedyPolicy: Policy = {
     // 1) Strategic, cross-turn commitments first (their value isn't visible to a
     //    one-ply score): world Wars, war shells, deliberate captures.
     tryWorldWars(p, opp);
+    tryKaethlaanSupport(p, opp);
     tryTakenPrisoner(p);
 
     // 2) Greedily take the single best eval-improving play, repeat until nothing

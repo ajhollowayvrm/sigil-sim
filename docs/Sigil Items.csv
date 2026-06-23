@@ -40,3 +40,7 @@ Round Shield,T1,Item,Equipped character gains +10 DEF.,A door you can carry.,Gen
 Goblin Shiv,T1,Item,Equipped character gains +10 ATK. Equip only to a Goblin character.,"Found, not made.",Goblin signature forge base.,
 Goblin Cleaver,T2,Item,Equipped character gains +20 ATK and +10 DEF. Equip only to a Goblin character.,"Bigger goblin, bigger answer.",Forge from Goblin Shiv (cost: 1 item).,Goblin Shiv
 Warboss' Maul,T3,Item,Equipped character gains +40 ATK and +10 DEF. Equip only to a Goblin character.,The last argument the warband ever needs.,Forge from Goblin Cleaver (cost: 2 items).,Goblin Cleaver
+Kaethlaan Banner,T2,Item,"Equip only to a Kaethlaan character. That character gains +10 DEF, and your Kaethlaan characters gain +10 ATK.","Follow it, or explain to it why you didn't.",Kaethlaan-only equip; grants an army-wide +10 ATK aura.,
+Kaethlaan Bow,T2,Item,Equipped character gains +20 ATK.,Reach is its own kind of armor.,Kaethlaan ranged equip.,
+Kaethlaan Broadsword,T2,Item,Equipped character gains +20 ATK and +10 DEF.,Heavy enough to mean it.,Kaethlaan versatile equip.,
+Royal Warrant,T1,Item,"When consumed in a transformation, counts as any required named item.",The crown's signature opens most doors.,Wild named transform fuel — helps the Kael and Arlia gates.,
