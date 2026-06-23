@@ -15,3 +15,16 @@ export function log(s: string): void {
 export function logging(): boolean {
   return sink !== null;
 }
+
+/** Run `fn` with the log sink muted — used by the AI's look-ahead trials so that
+ *  simulating a candidate move on a cloned state never leaks lines into the
+ *  recorder. Restores the previous sink afterwards. */
+export function suppressLog<T>(fn: () => T): T {
+  const prev = sink;
+  sink = null;
+  try {
+    return fn();
+  } finally {
+    sink = prev;
+  }
+}
