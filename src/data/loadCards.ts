@@ -202,6 +202,19 @@ export function itemBearerInclude(name: string): string | undefined {
   return ITEM_BEARER_INCLUDES[name];
 }
 
+// ---- event tiers (for the character-tier gate on non-character cards) ----
+const EVENT_TIER = new Map<string, number>();
+for (const row of eventRows) {
+  const name = (row.Name ?? "").trim();
+  if (name) EVENT_TIER.set(name, tierNum(row.Tier));
+}
+
+/** Tier of an event or on-play card (defaults to 1). Used to gate it behind a
+ *  controlled character of at least that tier. */
+export function getEventTier(name: string): number {
+  return EVENT_TIER.get(name) ?? ITEM_TIER.get(name) ?? 1;
+}
+
 /** True if the item ignores the tier gate (item tier ≤ bearer tier). */
 export function itemAnyTier(name: string): boolean {
   return ITEM_ANY_TIER.has(name);

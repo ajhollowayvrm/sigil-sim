@@ -38,6 +38,7 @@ import {
   hasWar,
   makeEquip,
   makeUnit,
+  meetsTierGate,
   moveZone,
   passiveSlotsUsed,
   placePersistent,
@@ -187,6 +188,7 @@ function onPlayCandidates(p: Player): Candidate[] {
   for (const card of p.hand) {
     if (seen.has(card) || !(card in ONPLAY)) continue;
     seen.add(card);
+    if (!meetsTierGate(p, card)) continue; // need a character of >= the card's tier
     out.push({
       label: `plays ${card}`,
       apply: (pp) => applyOnPlay(pp, card, lowestRatioWounded(pp)),
@@ -218,6 +220,7 @@ function supportPersistCandidates(p: Player): Candidate[] {
   if (eventSlot(p) === null) return out;
   for (const card of SUPPORT_PERSIST) {
     if (!p.hand.includes(card) || p.events.has(card)) continue;
+    if (!meetsTierGate(p, card)) continue; // need a character of >= the event's tier
     if (card === "Crusade" && !p.events.has("Holy War")) continue;
     if (card === "Horde Frenzy" && !p.events.has("Goblin War")) continue;
     if (card === "Rally to War" && !hasWar(p)) continue;
@@ -263,9 +266,8 @@ function tryWorldWars(p: Player, opp: Player): void {
   for (const war of WORLD_WARS) {
     if (hasWar(p)) break; // one world-state war per side
     if (!p.hand.includes(war) || p.events.has(war)) continue;
-    if (eventSlot(p) === null) return;
     if (!shouldPlayWorldWar(p, opp, war)) continue;
-    placePersistent(p, war);
+    if (!placePersistent(p, war)) continue; // gates the tier + slot requirement
     p.war_turns[war] = 0;
     if (war === "Holy War") {
       for (const pl of [p, opp])
@@ -285,10 +287,9 @@ function tryWorldWars(p: Player, opp: Player): void {
     p.hand.includes("Hardened Veterans") &&
     !p.events.has("Hardened Veterans") &&
     hasWar(p) &&
-    eventSlot(p) !== null &&
-    chars(p).some((u) => has(u.t.affils, "Royal Army"))
+    chars(p).some((u) => has(u.t.affils, "Royal Army")) &&
+    placePersistent(p, "Hardened Veterans")
   ) {
-    placePersistent(p, "Hardened Veterans");
     p.hand.splice(p.hand.indexOf("Hardened Veterans"), 1);
     if (logging()) log(`${p.name}: plays Hardened Veterans`);
   }
@@ -300,21 +301,19 @@ function tryKaethlaanSupport(p: Player, opp: Player): void {
   if (
     p.hand.includes("Close the Gates") &&
     !p.events.has("Close the Gates") &&
-    eventSlot(p) !== null &&
     activeWars([p, opp]).size > 0 &&
-    chars(p).some(isKaethlaan)
+    chars(p).some(isKaethlaan) &&
+    placePersistent(p, "Close the Gates")
   ) {
-    placePersistent(p, "Close the Gates");
     p.hand.splice(p.hand.indexOf("Close the Gates"), 1);
     if (logging()) log(`${p.name}: plays Close the Gates`);
   }
   if (
     p.hand.includes("War College") &&
     !p.events.has("War College") &&
-    eventSlot(p) !== null &&
-    chars(p).some((u) => has(u.t.affils, "Royal Army") && u.t.upg.length > 0)
+    chars(p).some((u) => has(u.t.affils, "Royal Army") && u.t.upg.length > 0) &&
+    placePersistent(p, "War College")
   ) {
-    placePersistent(p, "War College");
     p.hand.splice(p.hand.indexOf("War College"), 1);
     if (logging()) log(`${p.name}: plays War College`);
   }
@@ -323,7 +322,7 @@ function tryKaethlaanSupport(p: Player, opp: Player): void {
 /** Taken Prisoner: deliberately capture our own attack-through-War-Torn bodies (or
  *  any body while The Broken March is out) to switch on their wartime payoff. */
 function tryTakenPrisoner(p: Player): void {
-  while (p.hand.includes("Taken Prisoner") && hasWar(p)) {
+  while (p.hand.includes("Taken Prisoner") && hasWar(p) && meetsTierGate(p, "Taken Prisoner")) {
     const tgt = boardChars(p).find(
       (u) =>
         !u.wartorn &&

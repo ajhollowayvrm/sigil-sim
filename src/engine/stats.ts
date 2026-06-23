@@ -3,7 +3,7 @@
 
 import { comps } from "./elements";
 import type { Card, Equip, Player, Unit } from "./types";
-import { EQUIP, getItemTier, itemAnyTier, itemBearerInclude } from "../data/loadCards";
+import { EQUIP, getEventTier, getItemTier, itemAnyTier, itemBearerInclude } from "../data/loadCards";
 import { ITEM_BEARER_AFFIL, KAETHLAAN_AFFILS } from "../data/effects-map";
 
 /** True if a unit belongs to the Kaethlaan sphere (Royal Army / Mages Guild / Divine
@@ -25,6 +25,20 @@ export function chars(p: Player): Unit[] {
 
 export function boardChars(p: Player): Unit[] {
   return p.active.concat(p.passive);
+}
+
+/** Highest tier among the characters you control (active + passive + leader), 0 if none.
+ *  This is the basis for the tier gate on non-character cards: a tier-N card needs a
+ *  character of tier ≥ N in play. */
+export function highestCharTier(p: Player): number {
+  let t = 0;
+  for (const u of chars(p)) if (u.tier > t) t = u.tier;
+  return t;
+}
+
+/** Can a non-character card (event / on-play) be played, given the tier gate? */
+export function meetsTierGate(p: Player, name: string): boolean {
+  return getEventTier(name) <= highestCharTier(p);
 }
 
 /** Which zone-slot a persistent event occupies (defaults to passive). */
@@ -57,6 +71,7 @@ export function eventSlot(p: Player): "active" | "passive" | null {
 /** Play a persistent event into a free slot (passive-preferred). Returns false if the
  *  board is full in both zones. Records its name (events Set + pcards) and its zone. */
 export function placePersistent(p: Player, name: string): boolean {
+  if (!meetsTierGate(p, name)) return false; // need a controlled character of >= this event's tier
   const z = eventSlot(p);
   if (!z) return false;
   p.eventZones[name] = z;

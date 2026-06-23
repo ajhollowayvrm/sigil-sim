@@ -29,6 +29,7 @@ import {
   hasWar,
   makeEquip,
   makeUnit,
+  meetsTierGate,
   passiveSlotsUsed,
   placePersistent,
 } from "../engine/stats";
@@ -127,6 +128,7 @@ function onPlays(p: Player): GameAction[] {
   for (const card of p.hand) {
     if (seen.has(card) || !(card in ONPLAY)) continue;
     seen.add(card);
+    if (!meetsTierGate(p, card)) continue; // need a character of >= the card's tier
     const wounded = boardChars(p).filter((c) => c.hp < effMaxhp(p, c));
     if (wounded.length === 0) {
       out.push({
@@ -172,7 +174,8 @@ function metamorphs(p: Player): GameAction[] {
 
 function events(p: Player, opp: Player): GameAction[] {
   const out: GameAction[] = [];
-  const slot = eventSlot(p) !== null;
+  // An event is playable if a slot is free AND you control a character of >= its tier.
+  const canEvent = (card: string) => eventSlot(p) !== null && meetsTierGate(p, card);
   const addPersist = (card: string, extra?: (pp: Player) => void): GameAction => ({
     key: `event:${card}`,
     label: `Play ${card}`,
@@ -186,7 +189,7 @@ function events(p: Player, opp: Player): GameAction[] {
 
   // World-state wars are exclusive per side: only one War/Holy War/Goblin War at a time.
   for (const war of ["War", "Holy War", "Goblin War"]) {
-    if (slot && !hasWar(p) && p.hand.includes(war) && !p.events.has(war))
+    if (canEvent(war) && !hasWar(p) && p.hand.includes(war) && !p.events.has(war))
       out.push(
         addPersist(war, (pp) => {
           pp.war_turns[war] = 0;
@@ -203,18 +206,22 @@ function events(p: Player, opp: Player): GameAction[] {
         }),
       );
   }
-  if (slot && p.hand.includes("Crusade") && !p.events.has("Crusade") && p.events.has("Holy War")) out.push(addPersist("Crusade"));
-  if (slot && p.hand.includes("Horde Frenzy") && !p.events.has("Horde Frenzy") && p.events.has("Goblin War"))
+  if (canEvent("Crusade") && p.hand.includes("Crusade") && !p.events.has("Crusade") && p.events.has("Holy War"))
+    out.push(addPersist("Crusade"));
+  if (canEvent("Horde Frenzy") && p.hand.includes("Horde Frenzy") && !p.events.has("Horde Frenzy") && p.events.has("Goblin War"))
     out.push(addPersist("Horde Frenzy"));
-  if (slot && p.hand.includes("Rally to War") && !p.events.has("Rally to War") && hasWar(p)) out.push(addPersist("Rally to War"));
-  if (slot && p.hand.includes("Hardened Veterans") && !p.events.has("Hardened Veterans") && hasWar(p))
+  if (canEvent("Rally to War") && p.hand.includes("Rally to War") && !p.events.has("Rally to War") && hasWar(p))
+    out.push(addPersist("Rally to War"));
+  if (canEvent("Hardened Veterans") && p.hand.includes("Hardened Veterans") && !p.events.has("Hardened Veterans") && hasWar(p))
     out.push(addPersist("Hardened Veterans"));
-  if (slot && p.hand.includes("The Broken March") && !p.events.has("The Broken March")) out.push(addPersist("The Broken March"));
-  if (slot && p.hand.includes("Close the Gates") && !p.events.has("Close the Gates")) out.push(addPersist("Close the Gates"));
-  if (slot && p.hand.includes("War College") && !p.events.has("War College")) out.push(addPersist("War College"));
+  if (canEvent("The Broken March") && p.hand.includes("The Broken March") && !p.events.has("The Broken March"))
+    out.push(addPersist("The Broken March"));
+  if (canEvent("Close the Gates") && p.hand.includes("Close the Gates") && !p.events.has("Close the Gates"))
+    out.push(addPersist("Close the Gates"));
+  if (canEvent("War College") && p.hand.includes("War College") && !p.events.has("War College")) out.push(addPersist("War College"));
 
   // Taken Prisoner: consumed to make one of your own bodies War-Torn (needs a War).
-  if (p.hand.includes("Taken Prisoner") && hasWar(p)) {
+  if (p.hand.includes("Taken Prisoner") && hasWar(p) && meetsTierGate(p, "Taken Prisoner")) {
     for (const tgt of boardChars(p).filter((u) => !u.wartorn && canBecomeWarTorn(p, u)))
       out.push({
         key: `capture:${tgt.t.name}`,
