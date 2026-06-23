@@ -20,7 +20,7 @@ import type { Equip, Player, Unit } from "../engine/types";
 export function clonePlayer(p: Player): Player {
   const map = new Map<Unit, Unit>();
   const cu = (u: Unit): Unit => {
-    const nu: Unit = { ...u };
+    const nu: Unit = { ...u, mods: { ...u.mods } };
     map.set(u, nu);
     return nu;
   };

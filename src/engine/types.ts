@@ -100,6 +100,7 @@ export interface Unit {
   leader: boolean;
   zone: "active" | "passive" | "leader";
   entered: number; // turn the unit (soul) entered play; persists across transforms
+  mods: { atk: number; deff: number; hp: number }; // permanent buffs (fuel consumed in this form's transformation)
 }
 
 export type PersistCard = string; // persistent events live in pcards as their name

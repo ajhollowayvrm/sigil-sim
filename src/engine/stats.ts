@@ -91,7 +91,7 @@ export function linkedEquips(p: Player, u: Unit): Equip[] {
 const has = (arr: string[], x: string) => arr.includes(x);
 
 export function effAtk(p: Player, u: Unit): number {
-  let a = u.t.atk;
+  let a = u.t.atk + u.mods.atk;
   if (u.leader) a += LB[u.tier];
   const aura = !has(u.t.abil, "no_aura");
   if (aura && chars(p).some((x) => has(x.t.abil, "aura_honathan")) && has(u.t.affils, "Royal Army")) a += 10;
@@ -115,7 +115,7 @@ export function effAtk(p: Player, u: Unit): number {
 }
 
 export function effDef(p: Player, u: Unit): number {
-  let d = u.t.deff;
+  let d = u.t.deff + u.mods.deff;
   if (u.leader) d += LB[u.tier];
   if (chars(p).some((x) => has(x.t.abil, "aura_honathan")) && has(u.t.affils, "Royal Army") && !has(u.t.abil, "no_aura")) d += 10;
   if (has(u.t.abil, "honathan_buff") && chars(p).some((x) => has(x.t.abil, "aura_honathan"))) d += 10;
@@ -126,7 +126,7 @@ export function effDef(p: Player, u: Unit): number {
 }
 
 export function effMaxhp(p: Player, u: Unit): number {
-  let h = u.t.hp + (u.leader ? LB[u.tier] : 0);
+  let h = u.t.hp + u.mods.hp + (u.leader ? LB[u.tier] : 0);
   for (const e of linkedEquips(p, u)) h += e.eff.maxhp || 0;
   return h;
 }
@@ -162,7 +162,18 @@ export function canEquip(item: string, bearer: Unit): boolean {
 // ----- entity constructors / mutations -----
 
 export function makeUnit(t: Card, turn: number): Unit {
-  return { t, tier: t.tier, maxhp: t.hp, hp: t.hp, kills: 0, wartorn: false, leader: false, zone: "active", entered: turn };
+  return {
+    t,
+    tier: t.tier,
+    maxhp: t.hp,
+    hp: t.hp,
+    kills: 0,
+    wartorn: false,
+    leader: false,
+    zone: "active",
+    entered: turn,
+    mods: { atk: 0, deff: 0, hp: 0 },
+  };
 }
 
 export function makeEquip(name: string): Equip {

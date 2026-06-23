@@ -2,7 +2,7 @@
 // take is a policy decision (sim/ai.ts); this module only applies a chosen one.
 // Pure — no React/DOM.
 
-import { EQUIP, getCard, getItemTier, itemAnyTier, itemBearerInclude, itemUpgrades, T2ITEMS } from "../data/loadCards";
+import { EQUIP, FUEL, getCard, getItemTier, itemAnyTier, itemBearerInclude, itemUpgrades, T2ITEMS } from "../data/loadCards";
 import { fireEntry } from "./effects";
 import { log, logging } from "./log";
 import { effMaxhp, isEquipObj, LB, linkedEquips, makeUnit } from "./stats";
@@ -10,20 +10,11 @@ import type { Equip, ItemCost, Player, TransformCost, Unit } from "./types";
 
 const has = (arr: string[], x: string) => arr.includes(x);
 
-/** War College reduces the item cost of a Royal Army transform by one. */
-function itemsNeeded(p: Player, u: Unit, cost: TransformCost): number {
-  let n = cost.items || 0;
-  if (n > 0 && p.events.has("War College") && u.t.affils.includes("Royal Army")) n -= 1;
-  return Math.max(0, n);
-}
-
-/** True if `u` can transform into `dest` paying `cost` from `p`'s hand right now. */
+/** Can `u` transform into `dest` right now? Every character transforms NATURALLY —
+ *  items are never required. The only gates are the card's genuine conditions
+ *  (a state, a milestone, a presence). Destination must be in hand. */
 export function canAfford(p: Player, u: Unit, dest: string, cost: TransformCost): boolean {
   if (!p.hand.includes(dest)) return false;
-  const items = p.hand.filter((c) => T2ITEMS.has(c));
-  // Royal Warrant is a wild stand-in for any required NAMED item (Kael/Arlia gates).
-  if (cost.named && !p.hand.includes(cost.named) && !p.hand.includes("Royal Warrant")) return false;
-  if (itemsNeeded(p, u, cost) > items.length) return false;
   if ((cost.kills || 0) > u.kills) return false;
   if (cost.need_war && !hasWarLocal(p)) return false;
   if (cost.disillusion && !p.hand.includes("Disillusioned")) return false;
@@ -37,20 +28,31 @@ function hasWarLocal(p: Player): boolean {
   return p.events.has("War") || p.events.has("Holy War") || p.events.has("Goblin War");
 }
 
+/** Accelerator: consume up to `max` spare fuel items (those that buff) from hand and
+ *  return the accumulated buff. Fuel is optional — a transform happens with or without
+ *  it; consuming it just makes the new form enter stronger (the fuel cards' printed text). */
+function consumeFuelBuff(p: Player, max: number): { atk: number; deff: number; hp: number } {
+  const buff = { atk: 0, deff: 0, hp: 0 };
+  let n = 0;
+  for (let i = 0; i < p.hand.length && n < max; ) {
+    const eff = FUEL[p.hand[i]];
+    if (eff && (eff.atk || eff.deff || eff.maxhp || eff.all)) {
+      buff.atk += (eff.atk || 0) + (eff.all || 0);
+      buff.deff += (eff.deff || 0) + (eff.all || 0);
+      buff.hp += (eff.maxhp || 0) + (eff.all || 0);
+      p.hand.splice(i, 1);
+      n++;
+    } else i++;
+  }
+  return buff;
+}
+
 /** Apply a (validated) transformation: consume costs, swap the form, fire entry. */
 export function applyTransform(p: Player, opp: Player, turn: number, u: Unit, dest: string, cost: TransformCost): Unit {
-  if (cost.named) {
-    // pay with the printed item if held, otherwise spend a Royal Warrant for it.
-    const named = p.hand.includes(cost.named) ? cost.named : "Royal Warrant";
-    const ni = p.hand.indexOf(named);
-    if (ni >= 0) p.hand.splice(ni, 1);
-  }
-  for (let i = 0, need = itemsNeeded(p, u, cost); i < need; i++) {
-    const idx = p.hand.findIndex((c) => T2ITEMS.has(c));
-    if (idx >= 0) p.hand.splice(idx, 1);
-  }
-  if (cost.disillusion) p.hand.splice(p.hand.indexOf("Disillusioned"), 1);
+  if (cost.disillusion) p.hand.splice(p.hand.indexOf("Disillusioned"), 1); // the state-conferring card
   p.hand.splice(p.hand.indexOf(dest), 1);
+  // Optional accelerator: spend up to 2 spare fuel items to enter the new form buffed.
+  const buff = consumeFuelBuff(p, 2);
 
   // Carry over the WOUNDS, not the absolute HP: the gain in Max HP also applies to
   // current HP, so a full-health body stays full after transforming (a damaged one
@@ -61,6 +63,7 @@ export function applyTransform(p: Player, opp: Player, turn: number, u: Unit, de
   nu.leader = u.leader;
   nu.zone = u.zone;
   nu.entered = u.entered;
+  nu.mods = buff; // fuel buff is baked into this form (resets on the next transform)
   if (has(nu.t.affils, "War-Torn")) nu.wartorn = true;
   for (const lst of [p.active, p.passive]) {
     const i = lst.indexOf(u);
@@ -68,7 +71,7 @@ export function applyTransform(p: Player, opp: Player, turn: number, u: Unit, de
   }
   for (const e of p.pcards) if (isEquipObj(e) && e.link === u) e.link = nu;
   if (u.leader) p.leader = nu;
-  nu.hp = effMaxhp(p, nu) - deficit; // new full max, minus the wounds carried in
+  nu.hp = effMaxhp(p, nu) - deficit; // new full max (incl. fuel buff), minus the wounds carried in
   if (logging())
     log(`${p.name}: transforms ${u.t.name} → ${dest}${u.leader ? ` (Leader — tier bonus now +${LB[nu.tier]})` : ""}`);
   fireEntry(p, opp, nu);

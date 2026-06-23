@@ -60,40 +60,18 @@ export const CHAR_ENTRY: Record<string, string> = {
   "Channel Adept": "heal_lowest", // Channeled Mending
 };
 
-// Structured transformation cost keyed by DESTINATION form. The graph topology
-// (origin -> dest) is parsed from each destination's printed TransformIn in the
-// CSV; this map supplies the cost that prose can't express precisely.
+// Transformation gates keyed by DESTINATION form. Items are NEVER a gate — every
+// character transforms naturally (origin in play + destination in hand); fuel only
+// *accelerates* (buffs the result, see transform.ts). The ONLY gates are the
+// genuine card conditions: a state, a milestone, a presence. Anything not listed
+// here transforms freely along its printed lineage.
 export const TRANSFORM_COST: Record<string, TransformCost> = {
-  "Mage Arlia": { named: "Instructional Tome" },
-  "Squire Arlia": { named: "Instructional Sword" },
-  "Arlia, Youngest Archmage": { items: 2 },
-  "Captain Arlia of the Royal Army": { items: 2 },
-  "The Wandering Acolyte Arlia": { disillusion: true },
-  "The Ascended": { items: 1 },
-  "Swiftblade Kael": { named: "Back-Alley Blade" },
-  "Kael the Shadow": {},
-  "The King's Blade": {},
-  "Kael the Captured": { taken_prisoner: true },
-  "Kael the Runaway": {},
-  "Kael the Killer": {},
-  "The Silent": {},
-  "Illyego, the Soldier": { need_war: true },
-  "Illyego, the Conqueror": { kills: 3 },
+  "The Wandering Acolyte Arlia": { disillusion: true }, // must be Disillusioned
   "The Acolyte Illyego": { disillusion: true },
-  "Goblin Lieutenant": {},
-  "Goblin Captain": {},
-  "Lor'oak Goblin Commander": {},
-  "Old Maid Hresheeba": {},
-  "Second in Command Kael": { requires_arlia: true },
-  // ----- new Kaethlaan transform lines (every cost is item-based) -----
-  "Kaethlaan Knight": { items: 1 },
-  "Sword of the Realm": { items: 2 },
-  "Channel Adept": { items: 1 },
-  "Hierophant of the Channel": { items: 2 },
-  "Brutal Fighter Strango": { items: 1 },
-  "Kaethlaan Sniper": { items: 1 },
-  "Soldier Thomas": { items: 1 },
-  "Thomas the Brave": { items: 2 },
+  "Kael the Captured": { taken_prisoner: true }, // captured during a War
+  "Illyego, the Soldier": { need_war: true }, // conscripted only during a War
+  "Illyego, the Conqueror": { kills: 3 }, // must have banked 3 kills
+  "Second in Command Kael": { requires_arlia: true }, // while you control Arlia
 };
 
 // Play-permission for non-T1 standalones: minimum OTHER board characters required
