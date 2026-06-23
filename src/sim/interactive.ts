@@ -167,8 +167,8 @@ export async function playInteractive(
       chosen.apply(p, opp, turn);
     }
 
-    // ---- transform action (one per turn) ----
-    if (!p.lockout) {
+    // ---- transform action (one per turn) — blocked while leaderless ----
+    if (p.leader !== null) {
       const tacts = transformActions(p, turn);
       if (tacts.length > 0) {
         const options: Option[] = [...tacts, { key: "skip", label: "Skip transformation" }];
@@ -234,28 +234,44 @@ export async function playInteractive(
     if (opp.leader && opp.leader.hp <= 0) return finish(p.name as "A" | "B", turn, "leader");
     if (noCharactersLeft(opp)) return finish(p.name as "A" | "B", turn, "wiped");
 
-    // ---- elevation: at end of turn 2 (and any later turn still leaderless) ----
+    // ---- elevation: OPTIONAL, from end of turn 2 onward while leaderless ----
+    // You may decline and stay leaderless to wait for a better Leader candidate — but
+    // you can't transform while leaderless, the opponent's Leader keeps climbing, and
+    // you LOSE if you still have no Leader by the end of turn 5.
     if (p.leader === null && turn >= 2) {
       const elig = boardChars(p).filter((u) => u.entered <= turn - 1);
       if (elig.length === 0) {
         p.lockout = true;
       } else {
-        const options: Option[] = elig.map((u, i) => ({ key: `elevate:${u.t.name}#${i}`, label: `Elevate ${u.t.name} (T${u.tier}, ${u.hp} HP)` }));
+        const options: Option[] = elig.map((u, i) => ({
+          key: `elevate:${u.t.name}#${i}`,
+          label: `Elevate ${u.t.name} (T${u.tier}, ${u.hp} HP)`,
+        }));
+        const deadline = turn >= 5;
+        options.push({
+          key: "decline",
+          label: deadline ? "Stay leaderless (LOSE — no Leader by turn 5)" : "Stay leaderless (no transforms; wait for a better Leader)",
+        });
         const d: Decision = {
           kind: "elevate",
           actor: p.name as "A" | "B",
           turn,
-          prompt: `${p.name} — elevate one character to Leader`,
+          prompt: `${p.name} — elevate a character to Leader, or stay leaderless`,
           options,
+          terminalKey: "decline",
         };
         const key = await decide(d, p.name as "A" | "B", turn);
-        const idx = Math.max(0, options.findIndex((o) => o.key === key));
-        const chosen = elig[idx] ?? elig[0];
-        record(p, turn, "elevate", options[idx] ?? options[0], options);
-        crown(p, chosen);
+        if (key === "decline") {
+          p.lockout = true; // leaderless: flagged for the board, blocks transforms
+        } else {
+          const idx = Math.max(0, options.findIndex((o) => o.key === key));
+          const chosen = elig[idx] ?? elig[0];
+          record(p, turn, "elevate", options[idx] ?? options[0], options);
+          crown(p, chosen);
+        }
       }
     }
-    if (turn >= 6 && p.leader === null) return finish(opp.name as "A" | "B", turn, "noleader");
+    if (turn >= 5 && p.leader === null) return finish(opp.name as "A" | "B", turn, "noleader");
   }
 
   return finish("draw", Math.floor((TURN_CAP + 1) / 2), "timeout");

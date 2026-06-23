@@ -95,7 +95,9 @@ export function game(dA: string[], dB: string[], rnd: RNG, policy: Policy, recor
     if (noCharactersLeft(opp)) return finish(p.name, turn, "wiped");
 
     if (p.leader === null && turn >= 2) policy.elevate(p, turn);
-    if (turn >= 6 && p.leader === null) return finish(opp.name, turn, "noleader");
+    // Optional elevation: you may stay leaderless (no transforms while you do — that's
+    // the cost), but you lose if you still have no Leader by the end of turn 5.
+    if (turn >= 5 && p.leader === null) return finish(opp.name, turn, "noleader");
 
     if (recorder) recorder.endPly(A, B, turn);
     active = 1 - active;

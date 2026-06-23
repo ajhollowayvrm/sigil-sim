@@ -371,7 +371,7 @@ export const greedyPolicy: Policy = {
   },
 
   transformAction(p: Player, opp: Player, turn: number): void {
-    if (p.lockout) return;
+    if (p.leader === null) return; // no transforms while leaderless (the cost of waiting)
     const base = evalState(p, opp);
     // Enumerate every affordable transform (Leader included, with its restrictions)
     // and take the one that yields the strongest resulting board — not the first edge.
@@ -416,11 +416,16 @@ export const greedyPolicy: Policy = {
       p.lockout = true;
       return;
     }
-    // Crown whoever makes the strongest Leader — durability and aura value included,
-    // because the Leader carries the tier bonus and is the thing we can't lose.
-    let bestIdx = eligIdx[0];
+    // Elevation is optional now, but the AI's myopic score can't see the value of
+    // *waiting* for a better body (a future draw), so it commits a Leader rather than
+    // gamble on falling behind while leaderless. It does, however, prefer a body that
+    // can CLIMB (has a transform path) over dead-end chaff — a T1 Kael/Arlia over a
+    // vanilla Bogfang — so it stops crowning bodies that can never grow.
+    const climbable = eligIdx.filter((i) => bc[i].t.upg.length > 0);
+    const pool = climbable.length ? climbable : eligIdx;
+    let bestIdx = pool[0];
     let bestScore = -Infinity;
-    for (const i of eligIdx) {
+    for (const i of pool) {
       const score = scoreAfter(p, p, (cp) => crown(cp, boardChars(cp)[i]));
       if (score > bestScore) {
         bestScore = score;
