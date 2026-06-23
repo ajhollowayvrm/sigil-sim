@@ -10,7 +10,7 @@
 // TODO(v0.8): when Box ships v0.8, re-derive any of these that get printed onto
 // the cards (e.g. machine-readable ability tags / transform costs).
 
-import type { EquipEff, TransformCost } from "../engine/types";
+import type { EquipEff, ItemCost, TransformCost } from "../engine/types";
 
 // Engine flags per character (canonical CSV names). Cards absent here have none.
 export const CHAR_FLAGS: Record<string, string[]> = {
@@ -89,7 +89,41 @@ export const EQUIP: Record<string, EquipEff> = {
   "Aegis Plate": { deff: 40, maxhp: 20, atk: -20, cannot_attack: true },
   "Warmonger's Resolve": { war_atk: 20 },
   "Unbroken Will": { immune_wartorn: true },
+  // ----- signature weapons reached by item forging (§ item-transformation) -----
+  "Kael's Tarnished Blade": { atk: 10 },
+  "Kael's Honed Blade": { atk: 20, deff: 10 },
+  "Reaver's Edge": { atk: 40, deff: 10, war_atk: 10 },
+  "Arlia's Lance": { atk: 20, deff: 10 },
+  "Lance of the Archmage": { atk: 40, deff: 10 },
+  "Khaneris Sword": { atk: 20, deff: 10 },
+  "The Great Sword of Khaneris": { atk: 40, deff: 20 },
 };
+
+// Item forging cost, keyed by the DESTINATION item (the graph topology — which item
+// forges into which — is parsed from each destination's printed `TransformIn` in the
+// CSV, exactly like character transforms). Every forge ALWAYS pays a cost (locked
+// design rule): `items` = N transform-fuel/equipment items consumed from hand.
+export const ITEM_TRANSFORM_COST: Record<string, ItemCost> = {
+  "Aegis Plate": { items: 1 }, // forge up from Tower Shield
+  "Kael's Honed Blade": { items: 1 },
+  "Reaver's Edge": { items: 2 },
+  "Lance of the Archmage": { items: 2 },
+  "The Great Sword of Khaneris": { items: 2 },
+};
+
+// Signature items that may only be borne by a matching character (substring match on
+// the character's name). Flavour + a soft archetype lock.
+export const ITEM_BEARER_INCLUDES: Record<string, string> = {
+  "Kael's Tarnished Blade": "Kael",
+  "Kael's Honed Blade": "Kael",
+  "Reaver's Edge": "Kael",
+  "Arlia's Lance": "Arlia",
+  "Lance of the Archmage": "Arlia",
+};
+
+// Items that bypass the tier gate (item tier ≤ bearer tier). Empty for now, but the
+// hook exists for "special" grandfathered weapons / a War-deck "bears any tier" payoff.
+export const ITEM_ANY_TIER: Set<string> = new Set();
 
 export const FUEL: Record<string, EquipEff> = {
   Whetstone: { atk: 10 },

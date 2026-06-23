@@ -3,7 +3,7 @@
 
 import { comps } from "./elements";
 import type { Card, Equip, Player, Unit } from "./types";
-import { EQUIP } from "../data/loadCards";
+import { EQUIP, getItemTier, itemAnyTier, itemBearerInclude } from "../data/loadCards";
 
 /** Leader tier bonus (Ruleset: Leader System) — applied to ALL stats by current tier. */
 export const LB: Record<number, number> = { 1: 10, 2: 30, 3: 50, 4: 70 };
@@ -88,6 +88,16 @@ export function canAttack(p: Player, u: Unit): boolean {
 
 export function canBecomeWarTorn(p: Player, u: Unit): boolean {
   return !has(u.t.abil, "cannot_become_wartorn") && !linkedEquips(p, u).some((e) => e.eff.immune_wartorn);
+}
+
+/** Equip legality: an item may only be attached to a character whose tier is ≥ the
+ *  item's tier (the locked tier-gate rule), and signature items must match their
+ *  bearer. `bears_any_tier` (char) or an any-tier item bypasses the tier check. */
+export function canEquip(item: string, bearer: Unit): boolean {
+  const inc = itemBearerInclude(item);
+  if (inc && !bearer.t.name.includes(inc)) return false;
+  if (itemAnyTier(item) || has(bearer.t.abil, "bears_any_tier")) return true;
+  return getItemTier(item) <= bearer.tier;
 }
 
 // ----- entity constructors / mutations -----

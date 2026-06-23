@@ -29,6 +29,7 @@ import {
   activeSlotsUsed,
   boardChars,
   canBecomeWarTorn,
+  canEquip,
   chars,
   effMaxhp,
   hasWar,
@@ -37,7 +38,7 @@ import {
   moveZone,
   passiveSlotsUsed,
 } from "../engine/stats";
-import { applyTransform, canAfford, metamorph } from "../engine/transform";
+import { applyForge, applyTransform, canAfford, forgeOptions, metamorph } from "../engine/transform";
 import { cloneBoth } from "./clone";
 import { evalState, unitValue } from "./evaluate";
 import type { Player, TransformCost, Unit } from "../engine/types";
@@ -146,14 +147,35 @@ function equipCandidates(p: Player): Candidate[] {
     if (seen.has(card) || !(card in EQUIP)) continue;
     seen.add(card);
     if (EQUIP_REQUIRES_WAR.has(card) && !hasWar(p)) continue; // printed play-condition
-    boardChars(p).forEach((bearer, i) =>
+    boardChars(p).forEach((bearer, i) => {
+      if (!canEquip(card, bearer)) return; // tier-gate + signature bearer restriction
       out.push({
         label: `equips ${card} to ${bearer.t.name}`,
         // re-resolve the bearer by index inside the clone so the same code path works
         apply: (pp) => applyEquip(pp, card, boardChars(pp)[i]),
-      }),
-    );
+      });
+    });
   }
+  return out;
+}
+
+// Item forging: a separate, UNLIMITED-per-turn action lane, surfaced as candidates in
+// the same eval loop so the AI forges whenever the upgraded gear improves the board.
+function forgeCandidates(p: Player): Candidate[] {
+  const out: Candidate[] = [];
+  boardCharsAndLeader(p).forEach((bearer, bidx) => {
+    for (const opt of forgeOptions(p, bearer)) {
+      const dest = opt.dest;
+      out.push({
+        label: `forges ${opt.origin.name} → ${dest} on ${bearer.t.name}`,
+        apply: (pp) => {
+          const b = boardCharsAndLeader(pp)[bidx];
+          const o = forgeOptions(pp, b).find((x) => x.dest === dest);
+          if (o) applyForge(pp, b, o.origin, o.dest, o.cost);
+        },
+      });
+    }
+  });
   return out;
 }
 
@@ -324,6 +346,7 @@ export const greedyPolicy: Policy = {
         ...metamorphCandidates(p),
         ...hardCastCandidates(p, turn),
         ...equipCandidates(p),
+        ...forgeCandidates(p),
         ...onPlayCandidates(p),
         ...supportPersistCandidates(p),
       ];

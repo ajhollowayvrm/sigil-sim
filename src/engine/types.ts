@@ -23,6 +23,15 @@ export interface TransformCost {
 
 export type TransformEdge = [dest: string, cost: TransformCost];
 
+/** Cost to forge one item into a higher one. Always non-empty (forging always
+ *  costs): `items` transform-fuel/equipment items consumed from hand. */
+export interface ItemCost {
+  items?: number;
+  named?: string;
+}
+
+export type ItemEdge = [dest: string, cost: ItemCost];
+
 /** Equipment / fuel / on-play item mechanical effect (the §6 text->primitive mapping). */
 export interface EquipEff {
   atk?: number;

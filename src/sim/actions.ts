@@ -23,13 +23,14 @@ import {
   activeSlotsUsed,
   boardChars,
   canBecomeWarTorn,
+  canEquip,
   effMaxhp,
   hasWar,
   makeEquip,
   makeUnit,
   passiveSlotsUsed,
 } from "../engine/stats";
-import { applyTransform, canAfford, metamorph } from "../engine/transform";
+import { applyForge, applyTransform, canAfford, forgeOptions, metamorph } from "../engine/transform";
 import type { Player, Unit } from "../engine/types";
 
 const has = (arr: string[], x: string) => arr.includes(x);
@@ -80,12 +81,29 @@ function equips(p: Player): GameAction[] {
     if (seen.has(card) || !(card in EQUIP)) continue;
     seen.add(card);
     if (EQUIP_REQUIRES_WAR.has(card) && !hasWar(p)) continue;
-    for (const bearer of boardChars(p))
+    for (const bearer of boardChars(p)) {
+      if (!canEquip(card, bearer)) continue; // tier-gate + signature bearer restriction
       out.push({
         key: `equip:${card}>${bearer.t.name}`,
         label: `Equip ${card} → ${bearer.t.name}`,
         apply: (pp) => attachEquip(pp, card, bearer),
       });
+    }
+  }
+  return out;
+}
+
+/** Item forging — a separate, unlimited-per-turn action; always pays a cost. */
+function forges(p: Player): GameAction[] {
+  const out: GameAction[] = [];
+  for (const bearer of p.leader ? [p.leader, ...boardChars(p)] : boardChars(p)) {
+    for (const opt of forgeOptions(p, bearer)) {
+      out.push({
+        key: `forge:${opt.origin.name}>${opt.dest}@${bearer.t.name}`,
+        label: `Forge ${opt.origin.name} → ${opt.dest} (on ${bearer.t.name})`,
+        apply: (pp) => applyForge(pp, bearer, opt.origin, opt.dest, opt.cost),
+      });
+    }
   }
   return out;
 }
@@ -207,9 +225,10 @@ function events(p: Player, opp: Player): GameAction[] {
   return out;
 }
 
-/** Every legal main-phase play (excluding the transform action). */
+/** Every legal main-phase play (excluding the one-per-turn character transform).
+ *  Item forging lives here too — it is an unlimited-per-turn action lane. */
 export function mainActions(p: Player, opp: Player, turn: number): GameAction[] {
-  return [...hardCasts(p, turn), ...metamorphs(p), ...equips(p), ...onPlays(p), ...events(p, opp)];
+  return [...hardCasts(p, turn), ...metamorphs(p), ...equips(p), ...forges(p), ...onPlays(p), ...events(p, opp)];
 }
 
 // ----- the one-per-turn transform action -----

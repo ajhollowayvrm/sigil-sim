@@ -2,11 +2,11 @@
 // take is a policy decision (sim/ai.ts); this module only applies a chosen one.
 // Pure — no React/DOM.
 
-import { getCard, T2ITEMS } from "../data/loadCards";
+import { EQUIP, getCard, getItemTier, itemAnyTier, itemBearerInclude, itemUpgrades, T2ITEMS } from "../data/loadCards";
 import { fireEntry } from "./effects";
 import { log, logging } from "./log";
-import { isEquipObj, LB, makeUnit } from "./stats";
-import type { Player, TransformCost, Unit } from "./types";
+import { effMaxhp, isEquipObj, LB, linkedEquips, makeUnit } from "./stats";
+import type { Equip, ItemCost, Player, TransformCost, Unit } from "./types";
 
 const has = (arr: string[], x: string) => arr.includes(x);
 
@@ -55,6 +55,54 @@ export function applyTransform(p: Player, opp: Player, turn: number, u: Unit, de
     log(`${p.name}: transforms ${u.t.name} → ${dest}${u.leader ? ` (Leader — tier bonus now +${LB[nu.tier]})` : ""}`);
   fireEntry(p, opp, nu);
   return nu;
+}
+
+// ----- item forging (item transformation) -----
+// A separate action lane from character transformation: UNLIMITED per turn, but every
+// forge ALWAYS pays a cost, and the resulting item must fit the bearer's tier (you can
+// only forge a weapon up to a grade its wielder can hold). The attached item upgrades
+// in place — same bearer, same slot, stronger gear.
+
+export interface ForgeOption {
+  origin: Equip; // the attached item being upgraded
+  dest: string; // the item it becomes
+  cost: ItemCost;
+}
+
+function canAffordItem(p: Player, cost: ItemCost): boolean {
+  const items = p.hand.filter((c) => T2ITEMS.has(c));
+  if (cost.named && !p.hand.includes(cost.named)) return false;
+  if ((cost.items || 0) > items.length) return false;
+  return true;
+}
+
+/** Every legal forge available on `bearer` right now (tier-gated to the bearer). */
+export function forgeOptions(p: Player, bearer: Unit): ForgeOption[] {
+  const out: ForgeOption[] = [];
+  for (const e of linkedEquips(p, bearer)) {
+    for (const [dest, cost] of itemUpgrades(e.name)) {
+      if (getItemTier(dest) > bearer.tier && !itemAnyTier(dest)) continue; // result must fit the wielder
+      const inc = itemBearerInclude(dest);
+      if (inc && !bearer.t.name.includes(inc)) continue;
+      if (!canAffordItem(p, cost)) continue;
+      out.push({ origin: e, dest, cost });
+    }
+  }
+  return out;
+}
+
+/** Apply a (validated) forge: pay the cost, upgrade the attached item in place. */
+export function applyForge(p: Player, bearer: Unit, origin: Equip, dest: string, cost: ItemCost): void {
+  if (cost.named) p.hand.splice(p.hand.indexOf(cost.named), 1);
+  for (let i = 0; i < (cost.items || 0); i++) {
+    const idx = p.hand.findIndex((c) => T2ITEMS.has(c));
+    if (idx >= 0) p.hand.splice(idx, 1);
+  }
+  const from = origin.name;
+  origin.name = dest;
+  origin.eff = EQUIP[dest];
+  bearer.hp = Math.min(effMaxhp(p, bearer), bearer.hp); // a Max-HP change can clip current
+  if (logging()) log(`${p.name}: forges ${from} → ${dest} on ${bearer.t.name}`);
 }
 
 /** Metamorphosis (§5.5): morph a T1 Wild into any T2 Wild in hand. Does NOT use

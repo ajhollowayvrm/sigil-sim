@@ -5,7 +5,7 @@
 // transform costs, item effects) is layered in from effects-map.ts.
 
 import Papa from "papaparse";
-import type { Card, CardInfo, ChainDef, TransformCost } from "../engine/types";
+import type { Card, CardInfo, ChainDef, ItemEdge, TransformCost } from "../engine/types";
 import {
   CHAR_FLAGS,
   CHAR_ENTRY,
@@ -17,6 +17,9 @@ import {
   PERSIST,
   EQUIP_REQUIRES_WAR,
   T2ITEMS,
+  ITEM_TRANSFORM_COST,
+  ITEM_BEARER_INCLUDES,
+  ITEM_ANY_TIER,
 } from "./effects-map";
 
 // CSV text is embedded by scripts/embed-csv.ts so both Vite and the tsx CLIs can
@@ -155,6 +158,54 @@ export { CHARS };
 
 const itemRows = parseRows(itemsCsv);
 const eventRows = parseRows(eventsCsv);
+
+// ---- item tier + forge graph (the item-transformation system) ----
+// Tier is canon (CSV `Tier`); the forge topology is parsed from each item's printed
+// `TransformIn` (origin item), with the cost supplied by effects-map — exactly the
+// pattern used for character transforms.
+
+const ITEM_TIER = new Map<string, number>();
+const ITEM_UPGRADES = new Map<string, ItemEdge[]>(); // origin item -> [dest, cost][]
+
+function tierNum(s: string | undefined): number {
+  const n = parseInt((s ?? "").replace(/[^0-9]/g, ""), 10);
+  return Number.isFinite(n) && n > 0 ? n : 1;
+}
+
+for (const row of itemRows) {
+  const name = (row.Name ?? "").trim();
+  if (name) ITEM_TIER.set(name, tierNum(row.Tier));
+}
+for (const row of itemRows) {
+  const dest = (row.Name ?? "").trim();
+  const origin = (row.TransformIn ?? "").trim();
+  if (!dest || !origin) continue;
+  if (!(dest in EQUIP) || !(origin in EQUIP)) continue; // only forge between real equips
+  const cost = ITEM_TRANSFORM_COST[dest] ?? { items: 1 };
+  const edges = ITEM_UPGRADES.get(origin) ?? [];
+  edges.push([dest, cost]);
+  ITEM_UPGRADES.set(origin, edges);
+}
+
+/** Tier of an item (defaults to 1 for anything unlisted). */
+export function getItemTier(name: string): number {
+  return ITEM_TIER.get(name) ?? 1;
+}
+
+/** Forge edges out of an attached item: which items it can be upgraded into, + cost. */
+export function itemUpgrades(name: string): ItemEdge[] {
+  return ITEM_UPGRADES.get(name) ?? [];
+}
+
+/** A signature item's required bearer name substring (e.g. "Kael"), or undefined. */
+export function itemBearerInclude(name: string): string | undefined {
+  return ITEM_BEARER_INCLUDES[name];
+}
+
+/** True if the item ignores the tier gate (item tier ≤ bearer tier). */
+export function itemAnyTier(name: string): boolean {
+  return ITEM_ANY_TIER.has(name);
+}
 
 const CARD_INFO = new Map<string, CardInfo>();
 

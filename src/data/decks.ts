@@ -27,7 +27,7 @@ export function deckLoyalist(): string[] {
       "Channel Being",
       "Disillusioned",
     ],
-    ["Instructional Tome", "Instructional Sword", "Twin Daggers", "Twin Daggers", "Tower Shield", "Vital Charm", "Field Rations"],
+    ["Instructional Tome", "Instructional Sword", "Arlia's Lance", "Twin Daggers", "Tower Shield", "Vital Charm", "Field Rations"],
     ["Lumenkit", "Glimmermoth", "Stoneback", "Stoneback", "Murlifect", "Bogfang", "Cinderpel", "Galewing"],
   );
 }
@@ -78,7 +78,7 @@ export function deckWar(): string[] {
     ],
     [
       "Back-Alley Blade",
-      "Whetstone",
+      "Kael's Tarnished Blade",
       "Buckler",
       "Twin Daggers",
       "Tidecaller's Pearl",
