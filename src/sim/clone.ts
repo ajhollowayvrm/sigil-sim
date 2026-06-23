@@ -39,6 +39,7 @@ export function clonePlayer(p: Player): Player {
     leader,
     pcards,
     events: new Set(p.events),
+    eventZones: { ...p.eventZones },
     war_turns: { ...p.war_turns },
     rnd: mulberry32(0x51517), // inert: trials must never touch the real seeded stream
   };

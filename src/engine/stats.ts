@@ -27,12 +27,42 @@ export function boardChars(p: Player): Unit[] {
   return p.active.concat(p.passive);
 }
 
+/** Which zone-slot a persistent event occupies (defaults to passive). */
+function evZone(p: Player, name: string): "active" | "passive" {
+  return p.eventZones[name] ?? "passive";
+}
+
 export function activeSlotsUsed(p: Player): number {
-  return p.active.length + p.pcards.filter((e) => isEquipObj(e) && e.zone === "active").length;
+  return (
+    p.active.length +
+    p.pcards.filter((e) => (isEquipObj(e) ? e.zone === "active" : evZone(p, e) === "active")).length
+  );
 }
 
 export function passiveSlotsUsed(p: Player): number {
-  return p.passive.length + p.pcards.filter((e) => !(isEquipObj(e) && e.zone === "active")).length;
+  return (
+    p.passive.length +
+    p.pcards.filter((e) => (isEquipObj(e) ? e.zone === "passive" : evZone(p, e) === "passive")).length
+  );
+}
+
+/** A persistent event takes a board slot in EITHER zone — prefer passive (keep the
+ *  active line free for attackers), spill to active when passive is full. Null = no room. */
+export function eventSlot(p: Player): "active" | "passive" | null {
+  if (passiveSlotsUsed(p) < 3) return "passive";
+  if (activeSlotsUsed(p) < 3) return "active";
+  return null;
+}
+
+/** Play a persistent event into a free slot (passive-preferred). Returns false if the
+ *  board is full in both zones. Records its name (events Set + pcards) and its zone. */
+export function placePersistent(p: Player, name: string): boolean {
+  const z = eventSlot(p);
+  if (!z) return false;
+  p.eventZones[name] = z;
+  p.events.add(name);
+  p.pcards.push(name);
+  return true;
 }
 
 export function hasWar(p: Player): boolean {

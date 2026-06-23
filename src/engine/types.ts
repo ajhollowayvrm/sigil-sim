@@ -112,6 +112,7 @@ export interface Player {
   passive: Unit[];
   pcards: (Equip | PersistCard)[]; // equipment objects + persistent-event names
   events: Set<string>;
+  eventZones: Record<string, "active" | "passive">; // which zone-slot each persistent event occupies (default passive)
   war_turns: Record<string, number>;
   leader: Unit | null;
   lockout: boolean;

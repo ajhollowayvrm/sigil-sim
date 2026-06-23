@@ -35,6 +35,7 @@ export function makePlayer(deck: string[], name: string, rnd: RNG): Player {
     passive: [],
     pcards: [],
     events: new Set(),
+    eventZones: {},
     war_turns: {},
     leader: null,
     lockout: false,

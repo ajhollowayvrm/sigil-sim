@@ -33,12 +33,14 @@ import {
   chars,
   crownLeader,
   effMaxhp,
+  eventSlot,
   isKaethlaan,
   hasWar,
   makeEquip,
   makeUnit,
   moveZone,
   passiveSlotsUsed,
+  placePersistent,
 } from "../engine/stats";
 import { applyForge, applyTransform, canAfford, forgeOptions, metamorph } from "../engine/transform";
 import { cloneBoth } from "./clone";
@@ -100,9 +102,7 @@ function applyOnPlay(p: Player, card: string, bearer: Unit | null): void {
 }
 
 function applySupportPersist(p: Player, card: string): void {
-  p.events.add(card);
-  p.pcards.push(card);
-  p.hand.splice(p.hand.indexOf(card), 1);
+  if (placePersistent(p, card)) p.hand.splice(p.hand.indexOf(card), 1);
 }
 
 // ---------------------------------------------------------------------------
@@ -215,7 +215,7 @@ function metamorphCandidates(p: Player): Candidate[] {
 
 function supportPersistCandidates(p: Player): Candidate[] {
   const out: Candidate[] = [];
-  if (passiveSlotsUsed(p) >= 3) return out;
+  if (eventSlot(p) === null) return out;
   for (const card of SUPPORT_PERSIST) {
     if (!p.hand.includes(card) || p.events.has(card)) continue;
     if (card === "Crusade" && !p.events.has("Holy War")) continue;
@@ -262,10 +262,9 @@ function shouldPlayWorldWar(p: Player, opp: Player, war: string): boolean {
 function tryWorldWars(p: Player, opp: Player): void {
   for (const war of WORLD_WARS) {
     if (!p.hand.includes(war) || p.events.has(war)) continue;
-    if (passiveSlotsUsed(p) >= 3) return;
+    if (eventSlot(p) === null) return;
     if (!shouldPlayWorldWar(p, opp, war)) continue;
-    p.events.add(war);
-    p.pcards.push(war);
+    placePersistent(p, war);
     p.war_turns[war] = 0;
     if (war === "Holy War") {
       for (const pl of [p, opp])
@@ -285,11 +284,10 @@ function tryWorldWars(p: Player, opp: Player): void {
     p.hand.includes("Hardened Veterans") &&
     !p.events.has("Hardened Veterans") &&
     hasWar(p) &&
-    passiveSlotsUsed(p) < 3 &&
+    eventSlot(p) !== null &&
     chars(p).some((u) => has(u.t.affils, "Royal Army"))
   ) {
-    p.events.add("Hardened Veterans");
-    p.pcards.push("Hardened Veterans");
+    placePersistent(p, "Hardened Veterans");
     p.hand.splice(p.hand.indexOf("Hardened Veterans"), 1);
     if (logging()) log(`${p.name}: plays Hardened Veterans`);
   }
@@ -301,23 +299,21 @@ function tryKaethlaanSupport(p: Player, opp: Player): void {
   if (
     p.hand.includes("Close the Gates") &&
     !p.events.has("Close the Gates") &&
-    passiveSlotsUsed(p) < 3 &&
+    eventSlot(p) !== null &&
     activeWars([p, opp]).size > 0 &&
     chars(p).some(isKaethlaan)
   ) {
-    p.events.add("Close the Gates");
-    p.pcards.push("Close the Gates");
+    placePersistent(p, "Close the Gates");
     p.hand.splice(p.hand.indexOf("Close the Gates"), 1);
     if (logging()) log(`${p.name}: plays Close the Gates`);
   }
   if (
     p.hand.includes("War College") &&
     !p.events.has("War College") &&
-    passiveSlotsUsed(p) < 3 &&
+    eventSlot(p) !== null &&
     chars(p).some((u) => has(u.t.affils, "Royal Army") && u.t.upg.length > 0)
   ) {
-    p.events.add("War College");
-    p.pcards.push("War College");
+    placePersistent(p, "War College");
     p.hand.splice(p.hand.indexOf("War College"), 1);
     if (logging()) log(`${p.name}: plays War College`);
   }

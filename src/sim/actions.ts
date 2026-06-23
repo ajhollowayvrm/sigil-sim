@@ -25,10 +25,12 @@ import {
   canBecomeWarTorn,
   canEquip,
   effMaxhp,
+  eventSlot,
   hasWar,
   makeEquip,
   makeUnit,
   passiveSlotsUsed,
+  placePersistent,
 } from "../engine/stats";
 import { applyForge, applyTransform, canAfford, forgeOptions, metamorph } from "../engine/transform";
 import type { Player, Unit } from "../engine/types";
@@ -170,13 +172,12 @@ function metamorphs(p: Player): GameAction[] {
 
 function events(p: Player, opp: Player): GameAction[] {
   const out: GameAction[] = [];
-  const slot = passiveSlotsUsed(p) < 3;
+  const slot = eventSlot(p) !== null;
   const addPersist = (card: string, extra?: (pp: Player) => void): GameAction => ({
     key: `event:${card}`,
     label: `Play ${card}`,
     apply: (pp) => {
-      pp.events.add(card);
-      pp.pcards.push(card);
+      placePersistent(pp, card); // takes a slot in either zone (passive-preferred)
       pp.hand.splice(pp.hand.indexOf(card), 1);
       extra?.(pp);
       if (logging()) log(`${pp.name}: plays ${card}`);
