@@ -52,6 +52,10 @@ export function applyTransform(p: Player, opp: Player, turn: number, u: Unit, de
   if (cost.disillusion) p.hand.splice(p.hand.indexOf("Disillusioned"), 1);
   p.hand.splice(p.hand.indexOf(dest), 1);
 
+  // Carry over the WOUNDS, not the absolute HP: the gain in Max HP also applies to
+  // current HP, so a full-health body stays full after transforming (a damaged one
+  // keeps the same deficit).
+  const deficit = Math.max(0, effMaxhp(p, u) - u.hp);
   const nu = makeUnit(getCard(dest)!, turn);
   nu.kills = u.kills;
   nu.leader = u.leader;
@@ -64,6 +68,7 @@ export function applyTransform(p: Player, opp: Player, turn: number, u: Unit, de
   }
   for (const e of p.pcards) if (isEquipObj(e) && e.link === u) e.link = nu;
   if (u.leader) p.leader = nu;
+  nu.hp = effMaxhp(p, nu) - deficit; // new full max, minus the wounds carried in
   if (logging())
     log(`${p.name}: transforms ${u.t.name} → ${dest}${u.leader ? ` (Leader — tier bonus now +${LB[nu.tier]})` : ""}`);
   fireEntry(p, opp, nu);
@@ -121,6 +126,7 @@ export function applyForge(p: Player, bearer: Unit, origin: Equip, dest: string,
 /** Metamorphosis (§5.5): morph a T1 Wild into any T2 Wild in hand. Does NOT use
  *  the transformation action. Keeps banked kills; element becomes the new form's. */
 export function metamorph(p: Player, opp: Player, turn: number, src: Unit, dest: string): Unit {
+  const deficit = Math.max(0, effMaxhp(p, src) - src.hp); // wounds carry over the morph
   const nu = makeUnit(getCard(dest)!, turn);
   nu.kills = src.kills;
   nu.leader = src.leader;
@@ -132,6 +138,7 @@ export function metamorph(p: Player, opp: Player, turn: number, src: Unit, dest:
   }
   for (const e of p.pcards) if (isEquipObj(e) && e.link === src) e.link = nu;
   if (src.leader) p.leader = nu;
+  nu.hp = effMaxhp(p, nu) - deficit;
   p.hand.splice(p.hand.indexOf(dest), 1);
   const mi = p.hand.indexOf("Metamorphosis");
   if (mi >= 0) p.hand.splice(mi, 1);
