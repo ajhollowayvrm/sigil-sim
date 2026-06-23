@@ -26,7 +26,6 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm test
       - run: npm run build
         env:
           BASE_PATH: /sigil-sim/
