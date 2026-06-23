@@ -261,6 +261,7 @@ function shouldPlayWorldWar(p: Player, opp: Player, war: string): boolean {
 
 function tryWorldWars(p: Player, opp: Player): void {
   for (const war of WORLD_WARS) {
+    if (hasWar(p)) break; // one world-state war per side
     if (!p.hand.includes(war) || p.events.has(war)) continue;
     if (eventSlot(p) === null) return;
     if (!shouldPlayWorldWar(p, opp, war)) continue;

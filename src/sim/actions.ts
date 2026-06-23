@@ -184,8 +184,9 @@ function events(p: Player, opp: Player): GameAction[] {
     },
   });
 
+  // World-state wars are exclusive per side: only one War/Holy War/Goblin War at a time.
   for (const war of ["War", "Holy War", "Goblin War"]) {
-    if (slot && p.hand.includes(war) && !p.events.has(war))
+    if (slot && !hasWar(p) && p.hand.includes(war) && !p.events.has(war))
       out.push(
         addPersist(war, (pp) => {
           pp.war_turns[war] = 0;
