@@ -44,7 +44,7 @@ export interface Frame {
   result: { w: string; why: string } | null;
 }
 
-function snapUnit(p: Player, u: Unit): UnitSnap {
+export function snapUnit(p: Player, u: Unit): UnitSnap {
   return {
     name: u.t.name,
     elem: u.t.elem,
@@ -60,7 +60,7 @@ function snapUnit(p: Player, u: Unit): UnitSnap {
   };
 }
 
-function snap(p: Player): SideSnap {
+export function snap(p: Player): SideSnap {
   const charging = p.pcards.filter((e) => isEquipObj(e) && e.zone === "active").map((e) => (isEquipObj(e) ? e.name : ""));
   return {
     name: p.name,

@@ -111,8 +111,9 @@ function defenderValue(opp: Player, t: Unit): number {
   return v;
 }
 
-/** Which enemies can `u` reach right now (default-target rules + its flags). */
-function reachable(u: Unit, opp: Player): Unit[] {
+/** Which enemies can `u` reach right now (default-target rules + its flags).
+ *  Exported so the interactive play tool can show a human their legal targets. */
+export function reachable(u: Unit, opp: Player): Unit[] {
   let ts = opp.active.slice();
   if (has(u.t.abil, "hit_passive")) ts = ts.concat(opp.passive);
   const explicitLeader = has(u.t.abil, "hit_leader") && opp.leader;

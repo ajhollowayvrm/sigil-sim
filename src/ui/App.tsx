@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { BatchPanel } from "./BatchPanel";
 import { CardPool } from "./CardPool";
 import { InscriptionModal } from "./InscriptionModal";
+import { PlayBoard } from "./PlayBoard";
 import { WatchBoard } from "./WatchBoard";
 
-type Tab = "watch" | "batch" | "cards";
+type Tab = "watch" | "play" | "batch" | "cards";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "watch", label: "▶ Watch a game" },
+  { id: "play", label: "🎮 Play & record" },
   { id: "batch", label: "📊 Batch simulation" },
   { id: "cards", label: "📖 Cards & rules" },
 ];
@@ -40,6 +42,7 @@ export function App() {
       </div>
 
       {tab === "watch" && <WatchBoard onCard={setCard} />}
+      {tab === "play" && <PlayBoard onCard={setCard} />}
       {tab === "batch" && <BatchPanel />}
       {tab === "cards" && <CardPool onCard={setCard} />}
 
