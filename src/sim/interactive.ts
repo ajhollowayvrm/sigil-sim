@@ -11,7 +11,7 @@ import { cleanup, startOfTurn } from "../engine/effects";
 import { doChains, reachable, strike } from "../engine/combat";
 import { setLog } from "../engine/log";
 import { mulberry32 } from "../engine/rng";
-import { boardChars, canAttack, draw } from "../engine/stats";
+import { boardChars, canAttack, crownLeader, draw } from "../engine/stats";
 import { snap, type SideSnap } from "./recorder";
 import { mainActions, transformActions, type GameAction } from "./actions";
 import type { GameRecording, MoveRecord, Phase } from "./record";
@@ -46,17 +46,6 @@ export type Ask = (d: Decision) => Promise<string>;
 export type OnView = (v: View) => void;
 
 const TURN_CAP = 72;
-
-function crown(p: Player, u: Unit): void {
-  for (const lst of [p.active, p.passive]) {
-    const i = lst.indexOf(u);
-    if (i >= 0) lst.splice(i, 1);
-  }
-  u.leader = true;
-  u.zone = "leader";
-  p.leader = u;
-  p.lockout = false;
-}
 
 /** Play a full interactive game. Resolves with the complete recording. */
 export async function playInteractive(
@@ -267,7 +256,7 @@ export async function playInteractive(
           const idx = Math.max(0, options.findIndex((o) => o.key === key));
           const chosen = elig[idx] ?? elig[0];
           record(p, turn, "elevate", options[idx] ?? options[0], options);
-          crown(p, chosen);
+          crownLeader(p, chosen);
         }
       }
     }

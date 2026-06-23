@@ -132,6 +132,21 @@ export function moveZone(p: Player, u: Unit, z: "active" | "passive"): void {
   (z === "active" ? p.active : p.passive).push(u);
 }
 
+/** Crown `u` as Leader: pull it from its zone into the Leader slot and — the
+ *  coronation rule — restore it to FULL HP (its new max, which already includes the
+ *  Leader tier bonus). A chosen Leader is empowered, not whatever HP it limped in on. */
+export function crownLeader(p: Player, u: Unit): void {
+  for (const lst of [p.active, p.passive]) {
+    const i = lst.indexOf(u);
+    if (i >= 0) lst.splice(i, 1);
+  }
+  u.leader = true;
+  u.zone = "leader";
+  p.leader = u;
+  p.lockout = false;
+  u.hp = effMaxhp(p, u);
+}
+
 /** Draw one card; deck-out sets the loss flag (resolved by the turn loop). */
 export function draw(p: Player): void {
   if (p.deck.length === 0) {

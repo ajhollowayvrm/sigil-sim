@@ -31,6 +31,7 @@ import {
   canBecomeWarTorn,
   canEquip,
   chars,
+  crownLeader,
   effMaxhp,
   isKaethlaan,
   hasWar,
@@ -456,16 +457,15 @@ export const greedyPolicy: Policy = {
     let bestIdx = pool[0];
     let bestScore = -Infinity;
     for (const i of pool) {
-      const score = scoreAfter(p, p, (cp) => crown(cp, boardChars(cp)[i]));
+      const score = scoreAfter(p, p, (cp) => crownLeader(cp, boardChars(cp)[i]));
       if (score > bestScore) {
         bestScore = score;
         bestIdx = i;
       }
     }
     const best = bc[bestIdx];
-    crown(p, best);
-    p.lockout = false;
-    if (logging()) log(`${p.name}: elevates ${best.t.name} to Leader`);
+    crownLeader(p, best);
+    if (logging()) log(`${p.name}: elevates ${best.t.name} to Leader (crowned at full HP)`);
   },
 };
 
@@ -485,16 +485,6 @@ function routeZone(p: Player, opp: Player, nu: Unit): void {
     moveZone(p, nu, other);
     if (logging()) log(`${p.name}: ${nu.t.name} moves to the ${other} zone`);
   }
-}
-
-function crown(p: Player, u: Unit): void {
-  for (const lst of [p.active, p.passive]) {
-    const i = lst.indexOf(u);
-    if (i >= 0) lst.splice(i, 1);
-  }
-  u.leader = true;
-  u.zone = "leader";
-  p.leader = u;
 }
 
 // re-exported for tests/UI that want to reference the unit shape
