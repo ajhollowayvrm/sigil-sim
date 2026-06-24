@@ -122,6 +122,7 @@ export function fireEntry(p: Player, opp: Player, u: Unit): void {
 }
 
 export function startOfTurn(p: Player, opp: Player, turn: number): void {
+  for (const u of chars(p)) u.movedThisTurn = false; // a fresh reposition each turn
   // Regrow heal-over-time.
   for (const u of chars(p)) if (has(u.t.abil, "regrow") && u.hp < effMaxhp(p, u)) u.hp = Math.min(effMaxhp(p, u), u.hp + 10);
   // The Long Road: HoT on a Disillusioned/Wandering bearer (modeled as a passive event flag).

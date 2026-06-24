@@ -30,6 +30,7 @@ import {
   makeEquip,
   makeUnit,
   meetsTierGate,
+  moveZone,
   passiveSlotsUsed,
   placePersistent,
 } from "../engine/stats";
@@ -92,6 +93,30 @@ function equips(p: Player): GameAction[] {
         apply: (pp) => attachEquip(pp, card, bearer),
       });
     }
+  }
+  return out;
+}
+
+/** Reposition: move a character between active and passive — once per character per
+ *  turn, slot permitting. Happens in the main phase (before combat), so a body that
+ *  moves up to attack is committed: it can't attack and then retreat to safety.
+ *  (A future card keyword could grant extra/after-combat movement.) */
+function moves(p: Player): GameAction[] {
+  const out: GameAction[] = [];
+  const activeRoom = activeSlotsUsed(p) < 3;
+  const passiveRoom = passiveSlotsUsed(p) < 3;
+  for (const u of boardChars(p)) {
+    if (u.movedThisTurn) continue;
+    const to = u.zone === "active" ? "passive" : "active";
+    if (to === "active" ? !activeRoom : !passiveRoom) continue;
+    out.push({
+      key: `move:${u.t.name}:${to}`,
+      label: `Move ${u.t.name} → ${to}`,
+      apply: (pp) => {
+        moveZone(pp, u, to);
+        u.movedThisTurn = true;
+      },
+    });
   }
   return out;
 }
@@ -256,7 +281,16 @@ function events(p: Player, opp: Player): GameAction[] {
 /** Every legal main-phase play (excluding the one-per-turn character transform).
  *  Item forging lives here too — it is an unlimited-per-turn action lane. */
 export function mainActions(p: Player, opp: Player, turn: number): GameAction[] {
-  return [...hardCasts(p, turn), ...metamorphs(p), ...tutors(p), ...equips(p), ...forges(p), ...onPlays(p), ...events(p, opp)];
+  return [
+    ...hardCasts(p, turn),
+    ...metamorphs(p),
+    ...tutors(p),
+    ...moves(p),
+    ...equips(p),
+    ...forges(p),
+    ...onPlays(p),
+    ...events(p, opp),
+  ];
 }
 
 // ----- the one-per-turn transform action -----

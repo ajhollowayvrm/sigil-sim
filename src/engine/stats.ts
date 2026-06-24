@@ -173,6 +173,7 @@ export function makeUnit(t: Card, turn: number): Unit {
     zone: "active",
     entered: turn,
     mods: { atk: 0, deff: 0, hp: 0 },
+    movedThisTurn: false,
   };
 }
 
