@@ -133,6 +133,8 @@ details summary { cursor: pointer; color: var(--mut); font-size: 12px; }
 .hand { display: flex; gap: 6px; flex-wrap: wrap; }
 .handcard { background: var(--panel2); border: 1px solid var(--line); border-radius: 7px; padding: 4px 9px; font-size: 12px; font-weight: 600; cursor: pointer; }
 .handcard:hover { border-color: var(--acc); }
+.handcard.facedown { cursor: default; color: var(--mut); background: var(--panel); font-size: 16px; padding: 2px 7px; font-weight: 400; }
+.handcard.facedown:hover { border-color: var(--line); }
 .saverow { display: inline-flex; gap: 8px; align-items: center; margin-left: 12px; }
 .saverow button { background: var(--acc); color: #1a1408; border: 1px solid var(--acc); border-radius: 8px; padding: 5px 11px; font-weight: 700; cursor: pointer; }
 .saverow button.ghost { background: var(--panel); color: var(--ink); border-color: var(--line); }

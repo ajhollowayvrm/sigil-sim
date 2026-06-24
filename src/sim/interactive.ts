@@ -8,14 +8,18 @@
 
 import { makePlayer, noCharactersLeft } from "../engine/game";
 import { cleanup, startOfTurn } from "../engine/effects";
-import { doChains, reachable, strike } from "../engine/combat";
+import { combat, doChains, reachable, strike } from "../engine/combat";
 import { setLog } from "../engine/log";
 import { mulberry32 } from "../engine/rng";
 import { boardChars, canAttack, crownLeader, draw } from "../engine/stats";
+import { greedyPolicy } from "./ai";
 import { snap, type SideSnap } from "./recorder";
 import { mainActions, type GameAction } from "./actions";
 import type { GameRecording, MoveRecord, Phase } from "./record";
 import type { Player, Unit } from "../engine/types";
+
+/** Who drives a side: a human at the keyboard, or the greedy AI policy. */
+export type Controller = "human" | "ai";
 
 export interface Option {
   key: string;
@@ -56,6 +60,8 @@ export async function playInteractive(
   seed: number,
   ask: Ask,
   onView: OnView,
+  controllers: { A: Controller; B: Controller } = { A: "human", B: "human" },
+  pace?: () => Promise<void>,
 ): Promise<GameRecording> {
   const rnd = mulberry32(seed >>> 0);
   const A = makePlayer(deckA, "A", rnd);
@@ -135,8 +141,11 @@ export async function playInteractive(
     }
     if (p.lose) return finish(opp.name as "A" | "B", turn, "deckout");
 
-    // ---- main phase: take legal plays until the human ends it ----
-    for (;;) {
+    const human = controllers[p.name as "A" | "B"] === "human";
+
+    // ---- main phase: human takes legal plays until they end it; the AI runs its policy ----
+    if (human)
+      for (;;) {
       const acts = mainActions(p, opp, turn);
       if (acts.length === 0) break;
       const options: Option[] = [...acts, { key: "done", label: "End main phase" }];
@@ -157,10 +166,17 @@ export async function playInteractive(
       const phase: Phase = chosen.key.startsWith("transform:") ? "transform" : "main";
       record(p, turn, phase, chosen, options);
       chosen.apply(p, opp, turn);
+      }
+    else {
+      greedyPolicy.mainPhase(p, opp, turn);
+      greedyPolicy.transformAction(p, opp, turn);
+      onView(view(turn, p.name as "A" | "B"));
+      if (pace) await pace();
     }
 
-    // ---- combat (turn 3+): chains auto-resolve, human directs solo attacks ----
+    // ---- combat (turn 3+): the human directs solo attacks; the AI runs its planner ----
     if (turn >= 3) {
+      if (human) {
       p.dark_ignore_used = false;
       const used = new Set<Unit>();
       const leaderDied = doChains(p, opp, used);
@@ -198,6 +214,12 @@ export async function playInteractive(
         cleanup(opp);
         if (opp.leader && opp.leader.hp <= 0) return finish(p.name as "A" | "B", turn, "leader");
       }
+      } else {
+        combat(p, opp, turn);
+        onView(view(turn, p.name as "A" | "B"));
+        if (pace) await pace();
+        if (opp.leader && opp.leader.hp <= 0) return finish(p.name as "A" | "B", turn, "leader");
+      }
     }
 
     if (opp.leader && opp.leader.hp <= 0) return finish(p.name as "A" | "B", turn, "leader");
@@ -210,6 +232,10 @@ export async function playInteractive(
     // you can't transform while leaderless, the opponent's Leader keeps climbing, and
     // you LOSE if you still have no Leader by the end of turn 5.
     if (p.leader === null && turn >= 2) {
+      if (!human) {
+        greedyPolicy.elevate(p, turn);
+        if (p.leader === null) p.lockout = true;
+      } else {
       const elig = boardChars(p).filter((u) => u.entered <= turn - 1);
       if (elig.length === 0) {
         p.lockout = true;
@@ -240,6 +266,7 @@ export async function playInteractive(
           record(p, turn, "elevate", options[idx] ?? options[0], options);
           crownLeader(p, chosen);
         }
+      }
       }
     }
     if (turn >= 5 && p.leader === null) return finish(opp.name as "A" | "B", turn, "noleader");

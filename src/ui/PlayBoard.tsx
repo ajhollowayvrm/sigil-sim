@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { DECK_NAMES, DECKS } from "../data/decks";
-import { playInteractive, type Decision, type View } from "../sim/interactive";
+import { playInteractive, type Controller, type Decision, type View } from "../sim/interactive";
 import type { GameRecording } from "../sim/record";
 import { saveRecording } from "../sim/save";
 import type { SideSnap } from "../sim/recorder";
@@ -26,12 +26,14 @@ function Side({
   hand,
   name,
   acting,
+  hideHand,
   onCard,
 }: {
   s: SideSnap;
   hand: string[];
   name: string;
   acting: boolean;
+  hideHand: boolean;
   onCard: (n: string) => void;
 }) {
   return (
@@ -80,11 +82,17 @@ function Side({
         <div className="zlabel">Hand</div>
         <div className="hand">
           {hand.length === 0 && <div className="empty">empty</div>}
-          {hand.map((c, i) => (
-            <span className="handcard" key={i} onClick={() => onCard(c)}>
-              {c}
-            </span>
-          ))}
+          {hideHand
+            ? hand.map((_, i) => (
+                <span className="handcard facedown" key={i}>
+                  🂠
+                </span>
+              ))
+            : hand.map((c, i) => (
+                <span className="handcard" key={i} onClick={() => onCard(c)}>
+                  {c}
+                </span>
+              ))}
         </div>
       </div>
     </div>
@@ -94,6 +102,8 @@ function Side({
 export function PlayBoard({ onCard }: { onCard: (n: string) => void }) {
   const [a, setA] = useState("War");
   const [b, setB] = useState("Loyalist");
+  const [ctrlA, setCtrlA] = useState<Controller>("human");
+  const [ctrlB, setCtrlB] = useState<Controller>("ai");
   const [seed, setSeed] = useState(1);
   const [lockSeed, setLockSeed] = useState(false);
   const [running, setRunning] = useState(false);
@@ -118,6 +128,9 @@ export function PlayBoard({ onCard }: { onCard: (n: string) => void }) {
   const onView = useCallback((v: View) => setView(v), []);
   const choose = (key: string) => askRef.current?.(key);
 
+  // Lets the human watch the AI's plays/attacks land one beat at a time.
+  const pace = useCallback(() => new Promise<void>((res) => setTimeout(res, 650)), []);
+
   async function start() {
     const s = lockSeed ? seed : Math.floor(Math.random() * 1e9);
     if (!lockSeed) setSeed(s);
@@ -125,7 +138,7 @@ export function PlayBoard({ onCard }: { onCard: (n: string) => void }) {
     setView(null);
     setPending(null);
     setRunning(true);
-    const rec = await playInteractive(DECKS[a](), DECKS[b](), a, b, s, ask, onView);
+    const rec = await playInteractive(DECKS[a](), DECKS[b](), a, b, s, ask, onView, { A: ctrlA, B: ctrlB }, pace);
     rec.meta.startedAt = new Date().toISOString();
     setRecording(rec);
     setPending(null);
@@ -148,12 +161,20 @@ export function PlayBoard({ onCard }: { onCard: (n: string) => void }) {
             <option key={n}>{n}</option>
           ))}
         </select>
+        <select value={ctrlA} onChange={(e) => setCtrlA(e.target.value as Controller)} disabled={running}>
+          <option value="human">You</option>
+          <option value="ai">AI</option>
+        </select>
         <span className="vs">vs</span>
         <label>Deck B</label>
         <select value={b} onChange={(e) => setB(e.target.value)} disabled={running}>
           {DECK_NAMES.map((n) => (
             <option key={n}>{n}</option>
           ))}
+        </select>
+        <select value={ctrlB} onChange={(e) => setCtrlB(e.target.value as Controller)} disabled={running}>
+          <option value="human">You</option>
+          <option value="ai">AI</option>
         </select>
         <label>seed</label>
         <input type="number" value={seed} onChange={(e) => setSeed(parseInt(e.target.value) || 1)} disabled={running} />
@@ -208,8 +229,8 @@ export function PlayBoard({ onCard }: { onCard: (n: string) => void }) {
 
       {view && (
         <div className="boards">
-          <Side s={view.A} hand={view.handA} name={a} acting={view.actor === "A"} onCard={onCard} />
-          <Side s={view.B} hand={view.handB} name={b} acting={view.actor === "B"} onCard={onCard} />
+          <Side s={view.A} hand={view.handA} name={a} acting={view.actor === "A"} hideHand={ctrlA === "ai" && ctrlB === "human"} onCard={onCard} />
+          <Side s={view.B} hand={view.handB} name={b} acting={view.actor === "B"} hideHand={ctrlB === "ai" && ctrlA === "human"} onCard={onCard} />
         </div>
       )}
 
@@ -229,9 +250,11 @@ export function PlayBoard({ onCard }: { onCard: (n: string) => void }) {
 
       {!view && !running && (
         <p className="note">
-          You control <b>both sides</b> of a full game — every play, transform, attack, and elevation. Both hands are shown
-          (full information). Chains auto-resolve with the engine's targeting; you direct the solo attacks. Every move is
-          recorded; when the game ends you can download the JSON. Pick decks and press <b>Start game</b>.
+          Pick a deck for each side and choose <b>You</b> or <b>AI</b> to control it. By default you play <b>Deck A</b>{" "}
+          against the <b>AI</b> — every play, transform, attack, and elevation is your call; nothing auto-attacks unless a
+          card forces it. The AI's hand stays hidden. Chains auto-resolve with the engine's targeting; you direct the solo
+          attacks. Set both to <b>You</b> for a full-information hotseat, or both to <b>AI</b> to watch. Every move is
+          recorded; when the game ends you can download the JSON. Press <b>Start game</b>.
         </p>
       )}
     </div>
