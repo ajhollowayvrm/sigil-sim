@@ -273,7 +273,7 @@ function events(p: Player, opp: Player): GameAction[] {
     out.push(addPersist("Rally to War"));
   if (canEvent("Hardened Veterans") && p.hand.includes("Hardened Veterans") && !p.events.has("Hardened Veterans") && hasWar(p))
     out.push(addPersist("Hardened Veterans"));
-  if (canEvent("The Broken March") && p.hand.includes("The Broken March") && !p.events.has("The Broken March"))
+  if (canEvent("The Broken March") && p.hand.includes("The Broken March") && !p.events.has("The Broken March") && hasWar(p))
     out.push(addPersist("The Broken March"));
   if (canEvent("Close the Gates") && p.hand.includes("Close the Gates") && !p.events.has("Close the Gates"))
     out.push(addPersist("Close the Gates"));
