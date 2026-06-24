@@ -11,13 +11,29 @@ export function EventToken({ name, onCard }: { name: string; onCard: (n: string)
   );
 }
 
-export function Card({ u, onCard }: { u: UnitSnap | null; onCard: (name: string) => void }) {
+/** Optional drag-and-drop wiring for a card (used by PlayBoard; inert elsewhere). */
+export interface CardDnd {
+  draggable?: boolean;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
+  canDrop?: boolean; // this card is a valid drop target for the current drag
+  onDrop?: () => void;
+}
+
+export function Card({ u, onCard, dnd }: { u: UnitSnap | null; onCard: (name: string) => void; dnd?: CardDnd }) {
   if (!u) return <div className="empty">—</div>;
   const pct = u.maxhp > 0 ? Math.max(0, Math.min(100, (u.hp / u.maxhp) * 100)) : 0;
   return (
     <div
-      className={`card ${elemClass(u.elem)} ${u.leader ? "leader" : ""} ${u.hp <= 0 ? "dead" : ""}`}
+      className={`card ${elemClass(u.elem)} ${u.leader ? "leader" : ""} ${u.hp <= 0 ? "dead" : ""}${
+        dnd?.draggable ? " draggable" : ""
+      }${dnd?.canDrop ? " candrop" : ""}`}
       onClick={() => onCard(u.name)}
+      draggable={!!dnd?.draggable}
+      onDragStart={dnd?.draggable ? () => dnd.onDragStart?.() : undefined}
+      onDragEnd={dnd?.draggable ? () => dnd.onDragEnd?.() : undefined}
+      onDragOver={dnd?.canDrop ? (e) => e.preventDefault() : undefined}
+      onDrop={dnd?.canDrop ? (e) => { e.preventDefault(); dnd.onDrop?.(); } : undefined}
     >
       <div className="cn">{u.name}</div>
       <div className="row">
