@@ -144,6 +144,33 @@ export function getCard(name: string): Card | undefined {
   return CHARS.get(name);
 }
 
+/** A character's next-step climb: the form and the (printed) conditions to reach it.
+ *  Items are never a requirement (natural transforms); only real conditions appear. */
+export interface ClimbStep {
+  dest: string;
+  needs: string[];
+}
+
+function describeCost(cost: TransformCost): string[] {
+  const r: string[] = [];
+  if (cost.need_war) r.push("a War in play");
+  if (cost.kills) r.push(`${cost.kills} banked kill${cost.kills > 1 ? "s" : ""}`);
+  if (cost.disillusion) r.push("a Disillusioned character");
+  if (cost.taken_prisoner) r.push("captured during a War (Taken Prisoner)");
+  if (cost.requires_arlia) r.push("you control an Arlia");
+  return r;
+}
+
+/** What this character can transform into and what each step needs. */
+export function climbSteps(name: string): ClimbStep[] {
+  const c = CHARS.get(name);
+  if (!c) return [];
+  const steps: ClimbStep[] = c.upg.map(([dest, cost]) => ({ dest, needs: describeCost(cost) }));
+  if (c.affils.includes("Wild") && c.tier === 1)
+    steps.push({ dest: "any T2 Wild", needs: ["a Metamorphosis card (free — doesn't use your transformation)"] });
+  return steps;
+}
+
 export function isCharacter(name: string): boolean {
   return CHARS.has(name);
 }

@@ -107,6 +107,11 @@ details summary { cursor: pointer; color: var(--mut); font-size: 12px; }
 .cmlabel { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--mut); display: block; margin-bottom: 2px; }
 .cmrow { margin: 8px 0; font-size: 13px; }
 .cmflav { font-style: italic; color: #b9bfd0; margin-top: 10px; font-size: 13px; border-top: 1px solid var(--line); padding-top: 8px; }
+.cmstep { margin: 4px 0; }
+.cmstepname { font-weight: 700; font-size: 13px; }
+.cmstepname.link { color: var(--acc); cursor: pointer; }
+.cmstepname.link:hover { text-decoration: underline; }
+.cmstepneed { display: block; color: var(--mut); font-size: 12px; margin: 1px 0 0 14px; }
 /* ----- persistent-event token (sits in the zone slot it occupies) ----- */
 .card.eventtok { background: linear-gradient(160deg, #2a2336, #1e1a28); border-color: var(--dark); }
 .card.eventtok .cn { color: #d9c8f2; }

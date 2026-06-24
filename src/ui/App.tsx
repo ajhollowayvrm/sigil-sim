@@ -46,7 +46,7 @@ export function App() {
       {tab === "batch" && <BatchPanel />}
       {tab === "cards" && <CardPool onCard={setCard} />}
 
-      {card && <InscriptionModal name={card} onClose={() => setCard(null)} />}
+      {card && <InscriptionModal name={card} onClose={() => setCard(null)} onCard={setCard} />}
     </div>
   );
 }
