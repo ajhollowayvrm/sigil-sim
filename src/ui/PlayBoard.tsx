@@ -36,6 +36,10 @@ interface DnD {
   dropZone: (zone: "active" | "passive") => void;
   dropUnit: (name: string, idx: number) => void;
   dropLeader: () => void;
+  // precise legality of a drop, derived from the real option keys (drives highlights)
+  canZone: (zone: "active" | "passive") => boolean;
+  canUnit: (name: string, idx: number) => boolean;
+  canLeader: () => boolean;
 }
 
 function Side({
@@ -62,23 +66,27 @@ function Side({
   // ---- what's draggable on this side ----
   const handDraggable = mine && (k === "main" || k === "transform") && !hideHand;
 
-  // ---- what's a drop target on this side, for the current drag ----
-  // own zones accept a hand card being played
-  const zoneCanDrop = !!drag && drag.kind === "hand" && mine && (k === "main" || k === "transform");
-  // own units accept a hand card (equip / transform / morph / heal); enemy units accept an attacker
-  const unitCanDrop = (() => {
-    if (!drag) return false;
-    if (drag.kind === "hand") return mine; // play a card onto a friendly body
-    return !mine && k === "combat"; // attack an enemy body
-  })();
-  // own leader slot accepts a body being elevated
-  const leaderZoneCanDrop = !!drag && drag.kind === "unit" && mine && k === "elevate";
+  // ---- precise drop highlights (only truly-legal targets light up) ----
+  // Zones accept your hand card only on your own side. Friendly bodies accept a
+  // hand card (equip/transform/morph/heal); enemy bodies accept an attacker.
+  const zoneCanDrop = (zone: "active" | "passive") => mine && drag?.kind === "hand" && !!dnd?.canZone(zone);
+  const unitCanDrop = (name: string, idx: number) => {
+    if (!drag || !dnd) return false;
+    const sideOk = drag.kind === "hand" ? mine : !mine; // play-on-friendly vs attack-enemy
+    return sideOk && dnd.canUnit(name, idx);
+  };
+  const leaderZoneCanDrop = mine && drag?.kind === "unit" && k === "elevate" && !!dnd?.canLeader();
 
-  const unitDnd = (u: { name: string }, idx: number) => ({
-    draggable: mine && (k === "combat" || k === "elevate"),
+  // Combat: only active bodies + the Leader can attack (not the passive zone).
+  // Elevation: a body may be crowned from either the active or passive zone.
+  const zoneDraggable = (zone: "active" | "passive" | "leader") =>
+    mine && ((k === "combat" && zone !== "passive") || (k === "elevate" && zone !== "leader"));
+
+  const unitDnd = (u: { name: string }, idx: number, zone: "active" | "passive" | "leader") => ({
+    draggable: zoneDraggable(zone),
     onDragStart: () => dnd?.startUnit(u.name, idx),
     onDragEnd: () => dnd?.end(),
-    canDrop: unitCanDrop && !(drag?.kind === "unit" && drag.name === u.name && mine),
+    canDrop: unitCanDrop(u.name, idx),
     onDrop: () => dnd?.dropUnit(u.name, idx),
   });
 
@@ -101,19 +109,19 @@ function Side({
       >
         <div className="zlabel">Leader</div>
         <div className="slots">
-          <Card u={s.leader} onCard={onCard} dnd={s.leader ? unitDnd(s.leader, -1) : undefined} />
+          <Card u={s.leader} onCard={onCard} dnd={s.leader ? unitDnd(s.leader, -1, "leader") : undefined} />
         </div>
       </div>
       <div
-        className={`zone${zoneCanDrop ? " candrop" : ""}`}
-        onDragOver={zoneCanDrop ? (e) => e.preventDefault() : undefined}
-        onDrop={zoneCanDrop ? (e) => { e.preventDefault(); dnd?.dropZone("active"); } : undefined}
+        className={`zone${zoneCanDrop("active") ? " candrop" : ""}`}
+        onDragOver={zoneCanDrop("active") ? (e) => e.preventDefault() : undefined}
+        onDrop={zoneCanDrop("active") ? (e) => { e.preventDefault(); dnd?.dropZone("active"); } : undefined}
       >
         <div className="zlabel">Active</div>
         <div className="slots">
           {s.active.length === 0 && s.events.every((e) => e.zone !== "active") && <div className="empty">empty</div>}
           {s.active.map((u, i) => (
-            <Card key={i} u={u} onCard={onCard} dnd={unitDnd(u, i)} />
+            <Card key={i} u={u} onCard={onCard} dnd={unitDnd(u, i, "active")} />
           ))}
           {s.events.filter((e) => e.zone === "active").map((e) => (
             <EventToken key={e.name} name={e.name} onCard={onCard} />
@@ -121,15 +129,15 @@ function Side({
         </div>
       </div>
       <div
-        className={`zone${zoneCanDrop ? " candrop" : ""}`}
-        onDragOver={zoneCanDrop ? (e) => e.preventDefault() : undefined}
-        onDrop={zoneCanDrop ? (e) => { e.preventDefault(); dnd?.dropZone("passive"); } : undefined}
+        className={`zone${zoneCanDrop("passive") ? " candrop" : ""}`}
+        onDragOver={zoneCanDrop("passive") ? (e) => e.preventDefault() : undefined}
+        onDrop={zoneCanDrop("passive") ? (e) => { e.preventDefault(); dnd?.dropZone("passive"); } : undefined}
       >
         <div className="zlabel">Passive</div>
         <div className="slots">
           {s.passive.length === 0 && s.events.every((e) => e.zone !== "passive") && <div className="empty">empty</div>}
           {s.passive.map((u, i) => (
-            <Card key={i} u={u} onCard={onCard} dnd={unitDnd(u, i)} />
+            <Card key={i} u={u} onCard={onCard} dnd={unitDnd(u, i, "passive")} />
           ))}
           {s.events.filter((e) => e.zone === "passive").map((e) => (
             <EventToken key={e.name} name={e.name} onCard={onCard} />
@@ -211,13 +219,41 @@ export function PlayBoard({ onCard }: { onCard: (n: string) => void }) {
     return false;
   };
 
+  // Predicates: is this drop legal right now? Derived from the real option keys so
+  // a target only highlights when dropping there would fire an actual move.
+  const attackByName = (name: string) =>
+    optKeys().find((x) => {
+      const m = x.match(/^attack:(.+)#(-?\d+)>(.+)#(-?\d+)$/);
+      return m && drag?.kind === "unit" && m[1] === drag.name && m[3] === name;
+    });
+  const canZone = (zone: "active" | "passive") => {
+    if (!drag || drag.kind !== "hand") return false;
+    const keys = new Set(optKeys());
+    return keys.has(`play:${drag.card}:${zone}`) || keys.has(`event:${drag.card}`) || keys.has(`onplay:${drag.card}`);
+  };
+  const canUnit = (name: string, idx: number) => {
+    if (!drag) return false;
+    if (drag.kind === "hand") {
+      const c = drag.card;
+      const keys = new Set(optKeys());
+      return keys.has(`equip:${c}>${name}`) || keys.has(`transform:${name}>${c}`) || keys.has(`morph:${name}>${c}`) || keys.has(`onplay:${c}>${name}`);
+    }
+    return new Set(optKeys()).has(`attack:${drag.name}#${drag.idx}>${name}#${idx}`) || !!attackByName(name);
+  };
+  const canLeader = () =>
+    !!drag &&
+    drag.kind === "unit" &&
+    optKeys().some((x) => {
+      const m = x.match(/^elevate:(.+)#\d+$/);
+      return m && m[1] === drag.name;
+    });
+
   const dropZone = (zone: "active" | "passive") => {
     if (!drag || drag.kind !== "hand") return;
     const c = drag.card;
-    if (pick(`play:${c}:${zone}`, `event:${c}`, `onplay:${c}`)) return;
-    const k = optKeys().find((x) => x.startsWith(`tutor:${c}>`) || x.startsWith(`onplay:${c}`));
-    if (k) commit(k);
-    else setDrag(null);
+    // Only zone-appropriate plays resolve here; targeted cards (heal/tutor) are
+    // dropped on their target or chosen via the buttons, never auto-guessed.
+    if (!pick(`play:${c}:${zone}`, `event:${c}`, `onplay:${c}`)) setDrag(null);
   };
 
   const dropUnit = (name: string, idx: number) => {
@@ -227,11 +263,8 @@ export function PlayBoard({ onCard }: { onCard: (n: string) => void }) {
       if (!pick(`equip:${c}>${name}`, `transform:${name}>${c}`, `morph:${name}>${c}`, `onplay:${c}>${name}`)) setDrag(null);
     } else {
       if (pick(`attack:${drag.name}#${drag.idx}>${name}#${idx}`)) return;
-      // Fallback: match by names if the index reconstruction misses.
-      const k = optKeys().find((x) => {
-        const m = x.match(/^attack:(.+)#(-?\d+)>(.+)#(-?\d+)$/);
-        return m && m[1] === drag.name && m[3] === name;
-      });
+      // Fallback: match by attacker+target name if the index reconstruction misses.
+      const k = attackByName(name);
       if (k) commit(k);
       else setDrag(null);
     }
@@ -259,6 +292,9 @@ export function PlayBoard({ onCard }: { onCard: (n: string) => void }) {
       dropZone,
       dropUnit,
       dropLeader,
+      canZone,
+      canUnit,
+      canLeader,
     };
   };
 
