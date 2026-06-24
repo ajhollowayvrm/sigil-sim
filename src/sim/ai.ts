@@ -22,7 +22,7 @@ import {
   isHardCastable,
   playPermissionMin,
 } from "../data/loadCards";
-import { activeWars, fireEntry, warDamageFrom } from "../engine/effects";
+import { activeWars, applyTutor, fireEntry, isTutor, tutorTargets, warDamageFrom } from "../engine/effects";
 import type { Policy } from "../engine/game";
 import { log, logging, suppressLog } from "../engine/log";
 import {
@@ -319,6 +319,29 @@ function tryKaethlaanSupport(p: Player, opp: Player): void {
   }
 }
 
+/** Worth of a card to fetch (characters only — bigger forms first). */
+function fetchWorth(name: string): number {
+  const c = getCard(name);
+  if (!c || !c.simulatable) return 0;
+  return c.tier * 20 + c.atk + c.hp + c.deff;
+}
+
+/** Tutors: search up the card that best advances the climb — prefer the next form for
+ *  a body already on board (so we can transform it this very turn), else the strongest. */
+function tryTutors(p: Player): void {
+  for (const card of p.hand.slice()) {
+    if (!isTutor(card) || !meetsTierGate(p, card)) continue;
+    const targets = tutorTargets(p, card);
+    if (!targets.length) continue;
+    const enabling = targets.filter(
+      (t) => !p.hand.includes(t) && chars(p).some((u) => u.t.upg.some(([d]) => d === t)),
+    );
+    const pool = enabling.length ? enabling : targets;
+    const pick = pool.reduce((a, b) => (fetchWorth(b) > fetchWorth(a) ? b : a));
+    applyTutor(p, card, pick);
+  }
+}
+
 /** Taken Prisoner: deliberately capture our own attack-through-War-Torn bodies (or
  *  any body while The Broken March is out) to switch on their wartime payoff. */
 function tryTakenPrisoner(p: Player): void {
@@ -363,6 +386,7 @@ export const greedyPolicy: Policy = {
     //    one-ply score): world Wars, war shells, deliberate captures.
     tryWorldWars(p, opp);
     tryKaethlaanSupport(p, opp);
+    tryTutors(p); // assemble the climb before the transform phase
     tryTakenPrisoner(p);
 
     // 2) Greedily take the single best eval-improving play, repeat until nothing

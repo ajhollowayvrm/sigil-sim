@@ -10,7 +10,15 @@
 // TODO(v0.8): when Box ships v0.8, re-derive any of these that get printed onto
 // the cards (e.g. machine-readable ability tags / transform costs).
 
-import type { EquipEff, ItemCost, TransformCost } from "../engine/types";
+import type { EquipEff, ItemCost, TransformCost, TutorSpec } from "../engine/types";
+
+// Tutors: one-shot cards that search your deck for a matching card and add it to
+// hand. The War-deck consistency package — they assemble the climb instead of
+// hoping the next form is drawn in time.
+export const TUTOR: Record<string, TutorSpec> = {
+  "Field Promotion": { kind: "transform_form" }, // fetch the next form for a body you control
+  "War Effort": { kind: "affil", affils: ["Destined", "Faithless"] }, // fetch a Kael or Illyego character
+};
 
 // Engine flags per character (canonical CSV names). Cards absent here have none.
 export const CHAR_FLAGS: Record<string, string[]> = {

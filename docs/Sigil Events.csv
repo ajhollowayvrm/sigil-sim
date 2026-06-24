@@ -21,3 +21,5 @@ Metamorphosis,T1,Event,"Transform a T1 Wild you control into any T2 Wild in your
 Close the Gates,T2,Persistent Event,"While in play, your Kaethlaan characters take no damage from World-state Wars.",The walls remember every siege they outlasted.,Kaethlaan war-attrition immunity (parallel to Hardened Veterans).
 Reinforce the Front Lines,T1,Event,Heal one of your Kaethlaan characters 20.,"Fresh legs, fed and angry.",One-shot Kaethlaan heal.
 War College,T2,Persistent Event,Your Royal Army characters require one fewer item to transform.,"Doctrine is just other people's deaths, written down.",Transform-cost reducer for the Royal Army climb.
+Field Promotion,T1,Event,"Search your deck for a form one of your characters can transform into, reveal it, add it to your hand, then shuffle.",The fastest way up is to be the one they cannot spare.,Tutor: fetches the next form for a body you control. War-deck consistency.
+War Effort,T1,Event,"Search your deck for a Destined or Faithless character, reveal it, add it to your hand, then shuffle.",Everyone serves. Some simply have not been asked yet.,Tutor: fetches a Kael (Destined) or Illyego (Faithless) character.

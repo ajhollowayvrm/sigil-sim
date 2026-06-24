@@ -5,9 +5,45 @@
 import { comps } from "./elements";
 import { log, logging } from "./log";
 import { boardChars, chars, draw, effMaxhp, isEquipObj, isKaethlaan } from "./stats";
+import { getCard } from "../data/loadCards";
+import { TUTOR } from "../data/effects-map";
 import type { Player, Unit } from "./types";
 
 const has = (arr: string[], x: string) => arr.includes(x);
+
+// ----- tutors (deck search) -----
+
+export function isTutor(name: string): boolean {
+  return name in TUTOR;
+}
+
+/** The cards in `p`'s deck this tutor could fetch. */
+export function tutorTargets(p: Player, name: string): string[] {
+  const spec = TUTOR[name];
+  if (!spec) return [];
+  if (spec.kind === "transform_form") {
+    const dests = new Set<string>();
+    for (const u of chars(p)) for (const [d] of u.t.upg) if (p.deck.includes(d)) dests.add(d);
+    return [...dests];
+  }
+  return p.deck.filter((c) => {
+    const cc = getCard(c);
+    return !!cc && cc.affils.some((a) => spec.affils.includes(a));
+  });
+}
+
+/** Play the tutor: move `fetched` from deck to hand, consume the tutor. (No reshuffle —
+ *  the order beneath is already random; revealing one card leaks no advantage here.) */
+export function applyTutor(p: Player, name: string, fetched: string): void {
+  const di = p.deck.indexOf(fetched);
+  if (di >= 0) {
+    p.deck.splice(di, 1);
+    p.hand.push(fetched);
+  }
+  const ti = p.hand.indexOf(name);
+  if (ti >= 0) p.hand.splice(ti, 1);
+  if (logging()) log(`${p.name}: ${name} — searches up ${fetched}`);
+}
 
 // ----- world-state wars (§5.4: they hit active zones on BOTH sides) -----
 

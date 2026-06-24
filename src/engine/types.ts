@@ -23,6 +23,11 @@ export interface TransformCost {
 
 export type TransformEdge = [dest: string, cost: TransformCost];
 
+/** A tutor searches your deck for a matching card and adds it to hand. */
+export type TutorSpec =
+  | { kind: "transform_form" } // a form a character you control can transform into
+  | { kind: "affil"; affils: string[] }; // a character sharing one of these affiliations
+
 /** Cost to forge one item into a higher one. Always non-empty (forging always
  *  costs): `items` transform-fuel/equipment items consumed from hand. */
 export interface ItemCost {

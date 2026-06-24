@@ -17,7 +17,7 @@ import {
   isHardCastable,
   playPermissionMin,
 } from "../data/loadCards";
-import { fireEntry } from "../engine/effects";
+import { applyTutor, fireEntry, isTutor, tutorTargets } from "../engine/effects";
 import { logging, log } from "../engine/log";
 import {
   activeSlotsUsed,
@@ -92,6 +92,23 @@ function equips(p: Player): GameAction[] {
         apply: (pp) => attachEquip(pp, card, bearer),
       });
     }
+  }
+  return out;
+}
+
+/** Tutors — search the deck for a card and add it to hand (one option per fetchable card). */
+function tutors(p: Player): GameAction[] {
+  const out: GameAction[] = [];
+  const seen = new Set<string>();
+  for (const card of p.hand) {
+    if (seen.has(card) || !isTutor(card) || !meetsTierGate(p, card)) continue;
+    seen.add(card);
+    for (const tgt of tutorTargets(p, card))
+      out.push({
+        key: `tutor:${card}>${tgt}`,
+        label: `${card} → search up ${tgt}`,
+        apply: (pp) => applyTutor(pp, card, tgt),
+      });
   }
   return out;
 }
@@ -239,7 +256,7 @@ function events(p: Player, opp: Player): GameAction[] {
 /** Every legal main-phase play (excluding the one-per-turn character transform).
  *  Item forging lives here too — it is an unlimited-per-turn action lane. */
 export function mainActions(p: Player, opp: Player, turn: number): GameAction[] {
-  return [...hardCasts(p, turn), ...metamorphs(p), ...equips(p), ...forges(p), ...onPlays(p), ...events(p, opp)];
+  return [...hardCasts(p, turn), ...metamorphs(p), ...tutors(p), ...equips(p), ...forges(p), ...onPlays(p), ...events(p, opp)];
 }
 
 // ----- the one-per-turn transform action -----
