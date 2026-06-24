@@ -17,13 +17,14 @@ import {
   isHardCastable,
   playPermissionMin,
 } from "../data/loadCards";
-import { applyTutor, fireEntry, isTutor, tutorTargets } from "../engine/effects";
+import { applyTutor, fireEntry, isTutor, tutorPayable, tutorTargets } from "../engine/effects";
 import { logging, log } from "../engine/log";
 import {
   activeSlotsUsed,
   boardChars,
   canBecomeWarTorn,
   canEquip,
+  draw,
   effMaxhp,
   eventSlot,
   hasWar,
@@ -85,7 +86,10 @@ function equips(p: Player): GameAction[] {
     if (seen.has(card) || !(card in EQUIP)) continue;
     seen.add(card);
     if (EQUIP_REQUIRES_WAR.has(card) && !hasWar(p)) continue;
-    for (const bearer of boardChars(p)) {
+    // Bearers include the Leader: a Leader is a character and may hold equipment
+    // (the forge lane already allows this). The equip still occupies a passive slot.
+    const bearers = p.leader ? [p.leader, ...boardChars(p)] : boardChars(p);
+    for (const bearer of bearers) {
       if (!canEquip(card, bearer)) continue; // tier-gate + signature bearer restriction
       out.push({
         key: `equip:${card}>${bearer.t.name}`,
@@ -126,7 +130,7 @@ function tutors(p: Player): GameAction[] {
   const out: GameAction[] = [];
   const seen = new Set<string>();
   for (const card of p.hand) {
-    if (seen.has(card) || !isTutor(card) || !meetsTierGate(p, card)) continue;
+    if (seen.has(card) || !isTutor(card) || !meetsTierGate(p, card) || !tutorPayable(p, card)) continue;
     seen.add(card);
     for (const tgt of tutorTargets(p, card))
       out.push({
@@ -171,6 +175,19 @@ function onPlays(p: Player): GameAction[] {
     if (seen.has(card) || !(card in ONPLAY)) continue;
     seen.add(card);
     if (!meetsTierGate(p, card)) continue; // need a character of >= the card's tier
+    const drawN = ONPLAY[card].draw || 0;
+    if (drawN > 0) {
+      out.push({
+        key: `onplay:${card}`,
+        label: `Play ${card} (draw ${drawN})`,
+        apply: (pp) => {
+          for (let i = 0; i < drawN; i++) draw(pp);
+          pp.hand.splice(pp.hand.indexOf(card), 1);
+          if (logging()) log(`${pp.name}: ${card} — draws ${drawN}`);
+        },
+      });
+      continue;
+    }
     const wounded = boardChars(p).filter((c) => c.hp < effMaxhp(p, c));
     if (wounded.length === 0) {
       out.push({
@@ -290,6 +307,7 @@ export function mainActions(p: Player, opp: Player, turn: number): GameAction[] 
     ...forges(p),
     ...onPlays(p),
     ...events(p, opp),
+    ...transformActions(p, turn), // the one-per-turn transform is just another main-phase play now
   ];
 }
 
@@ -298,7 +316,9 @@ export function mainActions(p: Player, opp: Player, turn: number): GameAction[] 
 export function transformActions(p: Player, turn: number): GameAction[] {
   void turn;
   const out: GameAction[] = [];
-  const cands = p.leader ? [p.leader, ...boardChars(p)] : boardChars(p);
+  // Blocked while leaderless, and only one transform action per turn.
+  if (p.leader === null || p.transformedThisTurn) return out;
+  const cands = [p.leader, ...boardChars(p)];
   for (const u of cands) {
     for (const [dest, cost] of u.t.upg) {
       if (u.leader) {
@@ -310,7 +330,10 @@ export function transformActions(p: Player, turn: number): GameAction[] {
       out.push({
         key: `transform:${u.t.name}>${dest}`,
         label: `Transform ${u.t.name} → ${dest}${u.leader ? " (Leader)" : ""}`,
-        apply: (pp, oo, tn) => applyTransform(pp, oo, tn, u, dest, cost),
+        apply: (pp, oo, tn) => {
+          applyTransform(pp, oo, tn, u, dest, cost);
+          pp.transformedThisTurn = true; // spend the one-per-turn transform action
+        },
       });
     }
   }

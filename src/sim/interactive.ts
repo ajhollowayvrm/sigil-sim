@@ -13,7 +13,7 @@ import { setLog } from "../engine/log";
 import { mulberry32 } from "../engine/rng";
 import { boardChars, canAttack, crownLeader, draw } from "../engine/stats";
 import { snap, type SideSnap } from "./recorder";
-import { mainActions, transformActions, type GameAction } from "./actions";
+import { mainActions, type GameAction } from "./actions";
 import type { GameRecording, MoveRecord, Phase } from "./record";
 import type { Player, Unit } from "../engine/types";
 
@@ -152,30 +152,11 @@ export async function playInteractive(
       if (key === "done") break;
       const chosen = acts.find((a) => a.key === key);
       if (!chosen) break;
-      record(p, turn, "main", chosen, options);
+      // Transform is folded into the main phase (one per turn, gated in actions.ts),
+      // so you can transform a character and then reposition it before combat.
+      const phase: Phase = chosen.key.startsWith("transform:") ? "transform" : "main";
+      record(p, turn, phase, chosen, options);
       chosen.apply(p, opp, turn);
-    }
-
-    // ---- transform action (one per turn) — blocked while leaderless ----
-    if (p.leader !== null) {
-      const tacts = transformActions(p, turn);
-      if (tacts.length > 0) {
-        const options: Option[] = [...tacts, { key: "skip", label: "Skip transformation" }];
-        const d: Decision = {
-          kind: "transform",
-          actor: p.name as "A" | "B",
-          turn,
-          prompt: `${p.name} — transformation (one per turn): choose one or skip`,
-          options,
-          terminalKey: "skip",
-        };
-        const key = await decide(d, p.name as "A" | "B", turn);
-        const chosen = tacts.find((a) => a.key === key);
-        if (chosen) {
-          record(p, turn, "transform", chosen, options);
-          chosen.apply(p, opp, turn);
-        }
-      }
     }
 
     // ---- combat (turn 3+): chains auto-resolve, human directs solo attacks ----
@@ -190,8 +171,9 @@ export async function playInteractive(
         if (p.leader && !acted.has(p.leader) && canAttack(p, p.leader)) attackers.push(p.leader);
         const byKey = new Map<string, { a: Unit; t: Unit }>();
         const options: Option[] = [];
+        const holyWar = p.events.has("Holy War") || opp.events.has("Holy War");
         for (const u of attackers)
-          for (const tg of reachable(u, opp)) {
+          for (const tg of reachable(u, opp, holyWar)) {
             const key = `attack:${u.t.name}#${p.active.indexOf(u)}>${tg.t.name}#${opp.active.indexOf(tg)}`;
             byKey.set(key, { a: u, t: tg });
             options.push({ key, label: `${u.t.name} ⚔ ${tg.t.name} (${Math.max(0, tg.hp)} HP)` });

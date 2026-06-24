@@ -10,20 +10,46 @@
 // TODO(v0.8): when Box ships v0.8, re-derive any of these that get printed onto
 // the cards (e.g. machine-readable ability tags / transform costs).
 
-import type { EquipEff, ItemCost, TransformCost, TutorSpec } from "../engine/types";
+import type { ChainDef, EquipEff, ItemCost, TransformCost, TutorSpec } from "../engine/types";
+
+// Cards that confer the Disillusioned state (attach to one of your characters). Any of
+// them satisfies a chosen-branch / wanderer transform gate (Ruleset: "Disillusioned is a
+// STATE; other events that confer it satisfy the same condition").
+export const DISILLUSION_SOURCES: Set<string> = new Set(["Disillusioned", "A Crisis of Faith", "Cast Out"]);
+
+// A chain granted to the resulting form when a fuel item is consumed in a transformation.
+export const FUEL_GRANTED_CHAIN: Record<string, ChainDef> = {
+  "Banner of the Realm": { name: "Rally", affil: ["Kaethlaan Knights"], size: 2, mod: 0 }, // sum of ATK
+};
 
 // Tutors: one-shot cards that search your deck for a matching card and add it to
 // hand. The War-deck consistency package — they assemble the climb instead of
 // hoping the next form is drawn in time.
 export const TUTOR: Record<string, TutorSpec> = {
-  "Field Promotion": { kind: "transform_form" }, // fetch the next form for a body you control
+  "Field Promotion": { kind: "transform_form" }, // fetch the next form for a non-Wild body you control (Wilds advance only via Metamorphosis)
   "War Effort": { kind: "affil", affils: ["Destined", "Faithless"] }, // fetch a Kael or Illyego character
+  // One affiliation tutor per archetype that lacked one (each parallels War Effort:
+  // affiliation-locked, slot cost). Affil strings are post-normAffil ("The " stripped).
+  "Warren Muster": { kind: "affil", affils: ["Goblin"] }, // Goblin deck consistency
+  "Call of the Wild": { kind: "affil", affils: ["Wild"] }, // Wild deck — assemble the T2 terminal to morph into
+  "Conscription Order": { kind: "affil", affils: ["Royal Army"] }, // Loyalist Royal Army climb
+  // Already in canon (Sigil Events.csv) but never wired up. Discard 1 is its printed cost.
+  "Call of the Channel": { kind: "affil", affils: ["Divine Channel"], discard: 1 },
 };
 
 // Engine flags per character (canonical CSV names). Cards absent here have none.
 export const CHAR_FLAGS: Record<string, string[]> = {
   "Mage Arlia": ["aura_mages"],
-  "Captain Arlia of the Royal Army": ["my_liege"],
+  // my_liege carries both the +30/+30 (with Honathan) AND the manipulation-immunity /
+  // can't-change-control clauses (the latter are inert — no manipulation cards exist; see protection.ts).
+  "Captain Arlia of the Royal Army": ["my_liege", "manip_immune"],
+  // Squire Arlia (Me for You) and Second in Command Kael (At Her Side) — bodyguard redirect (combat.ts).
+  "Squire Arlia": ["redirect_meforyou"],
+  // Magical Shield: negate-and-destroy a destroying effect aimed at your cards. Inert — no destroy
+  // cards exist yet, though the ruleset now permits them (protection.ts honors it when one is added).
+  "Arlia, Youngest Archmage": ["magical_shield"],
+  // Seeker: once/turn look at top 3 of your deck and reorder (effects.ts seekerReorder; ai.ts trySeeker).
+  "The Wandering Acolyte Arlia": ["seeker"],
   "King Honathan of Kaethlaan": ["aura_honathan", "leader_protect_royal"],
   "Kael the Shadow": ["honathan_buff", "hit_passive"],
   "The King's Blade": ["honathan_buff", "hit_leader", "draw_on_ko_if_honathan"],
@@ -34,12 +60,12 @@ export const CHAR_FLAGS: Record<string, string[]> = {
   "Illyego, the Soldier": ["war_child", "no_aura"],
   "Illyego, the Conqueror": ["war_child", "war_atk", "no_aura"],
   "Goblin Captain": ["aura_goblin"],
-  "Old Maid Hresheeba": ["keeper_channel"],
+  "Old Maid Hresheeba": ["keeper_channel", "aura_channel"], // +10 ATK to your Divine Channel (DC archetype payoff)
   "A Man Bred for War": ["forged_in_chains"],
   "Murlifect": ["regrow"],
   "Craghide": ["regrow"],
   "The Acolyte Illyego": ["cannot_become_wartorn"],
-  "Second in Command Kael": ["redirect_arlia"], // §6: approximated (no destroy/redirect cards exist)
+  "Second in Command Kael": ["redirect_atherside"], // At Her Side: redirect attacks at Arlia to him; +10/+10 while you control Arlia
   // ----- new Kaethlaan roster -----
   "Brutal Fighter Strango": ["forged_in_chains"], // enters War-Torn (affil) but fights through it, +20
   "Kaethlaan Archer": ["hit_passive"],
@@ -80,12 +106,17 @@ export const TRANSFORM_COST: Record<string, TransformCost> = {
   "Illyego, the Soldier": { need_war: true }, // conscripted only during a War
   "Illyego, the Conqueror": { kills: 3 }, // must have banked 3 kills
   "Second in Command Kael": { requires_arlia: true }, // while you control Arlia
+  "The Ascended": { t3_items: 1 }, // needs ≥1 T3 item; ALL T3 items consumed → stats = count×20
 };
 
 // Play-permission for non-T1 standalones: minimum OTHER board characters required
 // (§5.1; King Honathan's "control 2+ other Kaethlaan characters", approximated).
 export const CHAR_PLAY: Record<string, number> = {
   "King Honathan of Kaethlaan": 2,
+  // §5.1 follow-up (balance log Round 1): A Man Bred for War was uncastable (T3, no
+  // base form, no permission). Granting a standalone permission — castable as a T3
+  // body (turn-3+ via the tier gate). Thematically "bred for war," no presence needed.
+  "A Man Bred for War": 0,
 };
 
 // ----- item mechanical effects (the printed Text -> numeric primitive) -----
@@ -96,6 +127,11 @@ export const EQUIP: Record<string, EquipEff> = {
   "Back-Alley Blade": { atk: 10 },
   "Twin Daggers": { atk: 10, deff: 10 },
   "Tidecaller's Pearl": { atk: 20, water_atk: 10 },
+  "Staff of Aelion": { atk: 20, fire_atk: 10 }, // Fire analog to Tidecaller's Pearl
+  "Carrion Blade": { atk: 10 },
+  "Feliefnir": { maxhp: 30, atk: 30, deff: 10 }, // stat part; "untargetable by opponent's equip effects" → protection.ts (inert: no opposing equip targets another card)
+  "Goblin War-Banner": { atk: 10, goblinwar_atk: 20 }, // +10, or +30 (instead) while a Goblin War is in play
+  "Sanctified Blade": { atk: 10 }, // +10; Light-only bearer + Holy-War anti-Dark targeting (see combat.ts / ITEM_BEARER_ELEM)
   "Tower Shield": { deff: 20, atk: -10 },
   "Vital Charm": { maxhp: 20, atk: -10 },
   "Berserker's Brand": { atk: 30, deff: -20 },
@@ -128,6 +164,12 @@ export const EQUIP: Record<string, EquipEff> = {
 /** Items restricted to a bearer of a given affiliation (vs name-substring signatures). */
 export const ITEM_BEARER_AFFIL: Record<string, string> = {
   "Kaethlaan Banner": "Kaethlaan", // Kaethlaan-sphere bearers only (matched via KAETHLAAN_AFFILS)
+  "Goblin War-Banner": "Goblin", // equip only to a Goblin character
+};
+
+/** Items restricted to a bearer whose ELEMENT includes the given component. */
+export const ITEM_BEARER_ELEM: Record<string, string> = {
+  "Sanctified Blade": "Light", // equip only to a Light character
 };
 
 // Item forging cost, keyed by the DESTINATION item (the graph topology — which item
@@ -167,6 +209,11 @@ export const ITEM_ANY_TIER: Set<string> = new Set();
 export const FUEL: Record<string, EquipEff> = {
   Whetstone: { atk: 10 },
   Buckler: { deff: 10 },
+  "Apprentice's Grimoire": { atk: 10 }, // T1 fuel: resulting form enters +10 ATK
+  "Squire's Oathblade": { deff: 10 }, // T1 fuel: resulting form enters +10 DEF
+  "Archmage's Focus": { atk: 20 }, // T2 fuel: +20 ATK on the resulting form
+  "Relic of the Forsaken": { all: 10 }, // T3 fuel: +10 all (also the food The Ascended consumes)
+  "Banner of the Realm": { all: 0 }, // T3 fuel; its printed "grants the Rally chain" rider is a TODO (chain-grant on transform not modeled)
   "Warlord's Spoils": { all: 10 },
   "Royal Warrant": {}, // wild transform fuel: substitutes for any required NAMED item (Kael/Arlia gates)
 };
@@ -174,6 +221,7 @@ export const FUEL: Record<string, EquipEff> = {
 export const ONPLAY: Record<string, EquipEff> = {
   "Field Rations": { heal: 10 },
   "Reinforce the Front Lines": { heal: 20 }, // reinforce a Kaethlaan unit
+  "Reagent Pouch": { draw: 1 }, // draw a card on play (NOTE: the greedy board-eval AI rarely values pure card draw)
 };
 
 // Persistent events that occupy a passive slot.
@@ -189,7 +237,8 @@ export const PERSIST: Set<string> = new Set([
   "Hardened Veterans",
   "The Broken March",
   "Close the Gates", // Kaethlaan units immune to War attrition
-  "War College", // your Royal Army characters transform for 1 fewer item
+  "War College", // your Royal Army characters transform for 1 fewer item (NOTE: no-op — transforms are free in this engine; see audit)
+  "The Long Road", // HoT on a Disillusioned/Wandering bearer (heals 10/turn in startOfTurn)
 ]);
 
 // Printed play-conditions on equipment (e.g. Warmonger's Resolve needs a War).

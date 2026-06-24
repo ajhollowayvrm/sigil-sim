@@ -1,9 +1,9 @@
-import { climbSteps, getCardInfo } from "../data/loadCards";
+import { climbSteps, transformsFrom, isCharacter, getCardInfo } from "../data/loadCards";
 
 export function InscriptionModal({ name, onClose, onCard }: { name: string; onClose: () => void; onCard?: (n: string) => void }) {
   const ci = getCardInfo(name);
   const steps = ci?.kind === "character" ? climbSteps(name) : [];
-  const terminal = ci?.kind === "character" && steps.length === 0;
+  const froms = ci?.kind === "character" ? transformsFrom(name) : [];
   return (
     <div className="modal" onClick={onClose}>
       <div className="cm-box" onClick={(e) => e.stopPropagation()}>
@@ -24,6 +24,25 @@ export function InscriptionModal({ name, onClose, onCard }: { name: string; onCl
               </div>
             )}
             {ci.text && <div className="cmab">{ci.text}</div>}
+            {froms.length > 0 && (
+              <div className="cmrow">
+                <span className="cmlabel">Transforms from</span>
+                {froms.map((f, i) => {
+                  const linkable = !!onCard && isCharacter(f.src);
+                  return (
+                    <div className="cmstep" key={i}>
+                      <span
+                        className={`cmstepname${linkable ? " link" : ""}`}
+                        onClick={() => linkable && onCard!(f.src)}
+                      >
+                        ← {f.src}
+                      </span>
+                      {f.needs.length > 0 && <span className="cmstepneed">via {f.needs.join(", ")}</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             {steps.length > 0 && (
               <div className="cmrow">
                 <span className="cmlabel">Transforms into</span>
@@ -40,12 +59,6 @@ export function InscriptionModal({ name, onClose, onCard }: { name: string; onCl
                     </span>
                   </div>
                 ))}
-              </div>
-            )}
-            {terminal && (
-              <div className="cmrow">
-                <span className="cmlabel">Transforms into</span>
-                <span className="cmstepneed">Final form — it does not transform further.</span>
               </div>
             )}
             {ci.flavor && <div className="cmflav">"{ci.flavor}"</div>}

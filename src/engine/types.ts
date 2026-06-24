@@ -19,6 +19,7 @@ export interface TransformCost {
   disillusion?: boolean; // a Disillusioned card consumed
   taken_prisoner?: boolean; // gated behind an active War (Taken Prisoner road)
   requires_arlia?: boolean; // presence gate (approximated)
+  t3_items?: number; // minimum T3 items in hand, ALL consumed on transform (The Ascended)
 }
 
 export type TransformEdge = [dest: string, cost: TransformCost];
@@ -26,7 +27,7 @@ export type TransformEdge = [dest: string, cost: TransformCost];
 /** A tutor searches your deck for a matching card and adds it to hand. */
 export type TutorSpec =
   | { kind: "transform_form" } // a form a character you control can transform into
-  | { kind: "affil"; affils: string[] }; // a character sharing one of these affiliations
+  | { kind: "affil"; affils: string[]; discard?: number }; // a character sharing one of these affiliations; discard N as a cost
 
 /** Cost to forge one item into a higher one. Always non-empty (forging always
  *  costs): `items` transform-fuel/equipment items consumed from hand. */
@@ -43,9 +44,12 @@ export interface EquipEff {
   deff?: number;
   maxhp?: number;
   water_atk?: number; // extra ATK if bearer's element includes Water
+  fire_atk?: number; // extra ATK if bearer's element includes Fire
   war_atk?: number; // extra ATK while a War is in play
+  goblinwar_atk?: number; // extra ATK while a Goblin War is in play (Goblin War-Banner)
   all?: number; // transform fuel: +N to all stats on the resulting form
   heal?: number; // on-play heal
+  draw?: number; // on-play: draw N cards
   cannot_attack?: boolean;
   immune_wartorn?: boolean;
 }
@@ -107,6 +111,12 @@ export interface Unit {
   entered: number; // turn the unit (soul) entered play; persists across transforms
   mods: { atk: number; deff: number; hp: number }; // permanent buffs (fuel consumed in this form's transformation)
   movedThisTurn: boolean; // has this character repositioned between zones this turn (once/turn)
+  shielded?: boolean; // Sanctuary: cannot be attacked until controller's next turn
+  tempDef?: number; // Bulwark: temporary DEF until controller's next turn
+  disillusioned?: boolean; // Disillusioned state (denies your auras; gates the wanderer transform)
+  grantedChain?: ChainDef; // a chain granted by a consumed fuel item (Banner of the Realm)
+  redirectUsed?: boolean; // Me for You: the once-per-opponent's-turn redirect has fired (reset each turn)
+  seekerUsed?: boolean; // Seeker: this turn's top-of-deck reorder has been spent (reset each turn)
 }
 
 export type PersistCard = string; // persistent events live in pcards as their name
@@ -124,7 +134,10 @@ export interface Player {
   leader: Unit | null;
   lockout: boolean;
   lose: boolean;
+  transformedThisTurn: boolean; // the one-per-turn transform action has been spent
+  extraTransforms?: number; // additional transform actions this turn (Opportunity)
   dark_ignore_used: boolean;
+  skipCombat?: boolean; // a Truce is suppressing this player's next combat phase
   rnd: () => number;
 }
 

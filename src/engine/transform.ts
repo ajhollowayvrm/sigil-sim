@@ -3,9 +3,10 @@
 // Pure — no React/DOM.
 
 import { EQUIP, FUEL, getCard, getItemTier, itemAnyTier, itemBearerInclude, itemUpgrades, T2ITEMS } from "../data/loadCards";
+import { FUEL_GRANTED_CHAIN } from "../data/effects-map";
 import { fireEntry } from "./effects";
 import { log, logging } from "./log";
-import { effMaxhp, isEquipObj, LB, linkedEquips, makeUnit } from "./stats";
+import { effMaxhp, isEquipObj, isKaethlaan, LB, linkedEquips, makeUnit } from "./stats";
 import type { Equip, ItemCost, Player, TransformCost, Unit } from "./types";
 
 const has = (arr: string[], x: string) => arr.includes(x);
@@ -17,11 +18,20 @@ export function canAfford(p: Player, u: Unit, dest: string, cost: TransformCost)
   if (!p.hand.includes(dest)) return false;
   if ((cost.kills || 0) > u.kills) return false;
   if (cost.need_war && !hasWarLocal(p)) return false;
-  if (cost.disillusion && !p.hand.includes("Disillusioned")) return false;
+  // Wanderer gate: the transforming body is already Disillusioned (state), or you hold a
+  // Disillusioned card to consume now (legacy hand-gate).
+  if (cost.disillusion && !u.disillusioned && !p.hand.includes("Disillusioned")) return false;
   if (cost.taken_prisoner && !hasWarLocal(p)) return false;
   if (cost.requires_arlia && !p.active.concat(p.passive, p.leader ? [p.leader] : []).some((x) => x.t.name.includes("Arlia")))
     return false;
+  if (cost.t3_items && countT3Items(p) < cost.t3_items) return false;
   return true;
+}
+
+/** T3 items in hand (the fuel The Ascended consumes). `getItemTier` is CSV-driven and
+ *  only returns 3 for cards in the item table, so it alone identifies a T3 item. */
+function countT3Items(p: Player): number {
+  return p.hand.filter((c) => getItemTier(c) === 3).length;
 }
 
 function hasWarLocal(p: Player): boolean {
@@ -36,7 +46,8 @@ function consumeFuelBuff(p: Player, max: number): { atk: number; deff: number; h
   let n = 0;
   for (let i = 0; i < p.hand.length && n < max; ) {
     const eff = FUEL[p.hand[i]];
-    if (eff && (eff.atk || eff.deff || eff.maxhp || eff.all)) {
+    // T3 relics are reserved for The Ascended's apotheosis — ordinary transforms don't burn them.
+    if (eff && getItemTier(p.hand[i]) < 3 && (eff.atk || eff.deff || eff.maxhp || eff.all)) {
       buff.atk += (eff.atk || 0) + (eff.all || 0);
       buff.deff += (eff.deff || 0) + (eff.all || 0);
       buff.hp += (eff.maxhp || 0) + (eff.all || 0);
@@ -49,10 +60,28 @@ function consumeFuelBuff(p: Player, max: number): { atk: number; deff: number; h
 
 /** Apply a (validated) transformation: consume costs, swap the form, fire entry. */
 export function applyTransform(p: Player, opp: Player, turn: number, u: Unit, dest: string, cost: TransformCost): Unit {
-  if (cost.disillusion) p.hand.splice(p.hand.indexOf("Disillusioned"), 1); // the state-conferring card
+  // Pay the wanderer gate: consume the body's Disillusioned state if it has it, else the card.
+  if (cost.disillusion) {
+    if (u.disillusioned) u.disillusioned = false;
+    else p.hand.splice(p.hand.indexOf("Disillusioned"), 1);
+  }
   p.hand.splice(p.hand.indexOf(dest), 1);
-  // Optional accelerator: spend up to 2 spare fuel items to enter the new form buffed.
-  const buff = consumeFuelBuff(p, 2);
+  // The Ascended: its stats ARE the number of T3 items consumed ×20 (item stat riders
+  // do not apply). Consume every T3 item in hand; that count drives HP/ATK/DEF.
+  // Otherwise, optional accelerator: spend up to 2 spare fuel items to enter buffed.
+  let buff: { atk: number; deff: number; hp: number };
+  if (has(getCard(dest)!.abil, "ascended_variable")) {
+    let n = 0;
+    for (let i = 0; i < p.hand.length; ) {
+      if (getItemTier(p.hand[i]) === 3) {
+        p.hand.splice(i, 1);
+        n++;
+      } else i++;
+    }
+    buff = { atk: n * 20, deff: n * 20, hp: n * 20 };
+  } else {
+    buff = consumeFuelBuff(p, 2);
+  }
 
   // Carry over the WOUNDS, not the absolute HP: the gain in Max HP also applies to
   // current HP, so a full-health body stays full after transforming (a damaged one
@@ -71,6 +100,13 @@ export function applyTransform(p: Player, opp: Player, turn: number, u: Unit, de
   }
   for (const e of p.pcards) if (isEquipObj(e) && e.link === u) e.link = nu;
   if (u.leader) p.leader = nu;
+  // Banner of the Realm: a T3 fuel consumed in a Kaethlaan transformation grants the
+  // resulting form the printed Rally chain (Chain 2 Kaethlaan Knights, sum of ATK).
+  if (!nu.t.chain && isKaethlaan(nu) && p.hand.includes("Banner of the Realm")) {
+    p.hand.splice(p.hand.indexOf("Banner of the Realm"), 1);
+    nu.grantedChain = FUEL_GRANTED_CHAIN["Banner of the Realm"];
+    if (logging()) log(`${p.name}: Banner of the Realm — ${nu.t.name} gains the Rally chain`);
+  }
   nu.hp = effMaxhp(p, nu) - deficit; // new full max (incl. fuel buff), minus the wounds carried in
   if (logging())
     log(`${p.name}: transforms ${u.t.name} → ${dest}${u.leader ? ` (Leader — tier bonus now +${LB[nu.tier]})` : ""}`);

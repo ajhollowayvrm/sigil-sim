@@ -22,7 +22,7 @@ import {
   isHardCastable,
   playPermissionMin,
 } from "../data/loadCards";
-import { activeWars, applyTutor, fireEntry, isTutor, tutorTargets, warDamageFrom } from "../engine/effects";
+import { activeWars, applyTutor, fireEntry, isTutor, seekerReady, seekerReorder, tutorPayable, tutorTargets, warDamageFrom } from "../engine/effects";
 import type { Policy } from "../engine/game";
 import { log, logging, suppressLog } from "../engine/log";
 import {
@@ -32,6 +32,9 @@ import {
   canEquip,
   chars,
   crownLeader,
+  draw,
+  effAtk,
+  effDef,
   effMaxhp,
   eventSlot,
   isKaethlaan,
@@ -99,6 +102,7 @@ function applyEquip(p: Player, card: string, bearer: Unit): void {
 
 function applyOnPlay(p: Player, card: string, bearer: Unit | null): void {
   if (bearer) bearer.hp = Math.min(effMaxhp(p, bearer), bearer.hp + (ONPLAY[card].heal || 0));
+  for (let i = 0; i < (ONPLAY[card].draw || 0); i++) draw(p);
   p.hand.splice(p.hand.indexOf(card), 1);
 }
 
@@ -150,12 +154,13 @@ function equipCandidates(p: Player): Candidate[] {
     if (seen.has(card) || !(card in EQUIP)) continue;
     seen.add(card);
     if (EQUIP_REQUIRES_WAR.has(card) && !hasWar(p)) continue; // printed play-condition
-    boardChars(p).forEach((bearer, i) => {
+    // The Leader is a valid bearer too (matches the forge lane and human action space).
+    boardCharsAndLeader(p).forEach((bearer, i) => {
       if (!canEquip(card, bearer)) return; // tier-gate + signature bearer restriction
       out.push({
         label: `equips ${card} to ${bearer.t.name}`,
         // re-resolve the bearer by index inside the clone so the same code path works
-        apply: (pp) => applyEquip(pp, card, boardChars(pp)[i]),
+        apply: (pp) => applyEquip(pp, card, boardCharsAndLeader(pp)[i]),
       });
     });
   }
@@ -330,7 +335,7 @@ function fetchWorth(name: string): number {
  *  a body already on board (so we can transform it this very turn), else the strongest. */
 function tryTutors(p: Player): void {
   for (const card of p.hand.slice()) {
-    if (!isTutor(card) || !meetsTierGate(p, card)) continue;
+    if (!isTutor(card) || !meetsTierGate(p, card) || !tutorPayable(p, card)) continue;
     const targets = tutorTargets(p, card);
     if (!targets.length) continue;
     const enabling = targets.filter(
@@ -339,6 +344,116 @@ function tryTutors(p: Player): void {
     const pool = enabling.length ? enabling : targets;
     const pick = pool.reduce((a, b) => (fetchWorth(b) > fetchWorth(a) ? b : a));
     applyTutor(p, card, pick);
+  }
+}
+
+/** Seeker (The Wandering Acolyte Arlia): once per turn, reorder the top 3 of the deck so
+ *  the most useful card is drawn next. A board-eval loop can't see future-draw value, so
+ *  this is an explicit heuristic: a card that lets a body on the table transform next turn
+ *  ranks highest, then the strongest body/form, then everything else. Deterministic. */
+function trySeeker(p: Player): void {
+  if (!seekerReady(p)) return;
+  const enables = (c: string) => boardCharsAndLeader(p).some((u) => u.t.upg.some(([d]) => d === c));
+  const key = (c: string) => (enables(c) ? 1e6 : 0) + fetchWorth(c);
+  seekerReorder(p, (a, b) => (key(a) !== key(b) ? key(a) > key(b) : a < b));
+}
+
+/** Reagent Pouch: cycle a card. The board-eval loop can't see card value, so play it
+ *  eagerly once we have a body (more cards = more climb pieces / answers). */
+function tryDraw(p: Player): void {
+  while (p.hand.includes("Reagent Pouch") && meetsTierGate(p, "Reagent Pouch")) {
+    p.hand.splice(p.hand.indexOf("Reagent Pouch"), 1);
+    draw(p);
+    if (logging()) log(`${p.name}: Reagent Pouch — draws a card`);
+  }
+}
+
+/** The Long Road: a heal-over-time; play it while we control a Wandering/Faithless body. */
+function tryLongRoad(p: Player): void {
+  if (!p.hand.includes("The Long Road")) return;
+  if (!boardChars(p).some((u) => ["Wandering", "Faithless"].some((a) => has(u.t.affils, a)))) return;
+  if (placePersistent(p, "The Long Road")) {
+    p.hand.splice(p.hand.indexOf("The Long Road"), 1);
+    if (logging()) log(`${p.name}: plays The Long Road`);
+  }
+}
+
+/** A Crisis of Faith / Cast Out: confer the Disillusioned state on a body that wants the
+ *  wanderer road (a disillusion-gated upgrade whose destination is in hand). (The plain
+ *  Disillusioned card keeps its atomic hand-gate path in transform.ts.) */
+function tryDisillusion(p: Player): void {
+  const src = ["A Crisis of Faith", "Cast Out"].find((c) => p.hand.includes(c));
+  if (!src) return;
+  const target = boardChars(p).find(
+    (u) => !u.disillusioned && u.t.upg.some(([d, c]) => c.disillusion && p.hand.includes(d)),
+  );
+  if (!target) return;
+  p.hand.splice(p.hand.indexOf(src), 1);
+  target.disillusioned = true;
+  if (src === "A Crisis of Faith") draw(p); // its on-enter draw
+  if (logging()) log(`${p.name}: ${src} — ${target.t.name} becomes Disillusioned`);
+}
+
+/** Opportunity: a bonus transform action while we control a Disillusioned body and have a
+ *  transform to spend it on. */
+function tryOpportunity(p: Player): void {
+  if (!p.hand.includes("Opportunity")) return;
+  if (!boardChars(p).some((u) => u.disillusioned)) return; // printed play condition
+  if (!boardCharsAndLeader(p).some((u) => u.t.upg.some(([d, c]) => canAfford(p, u, d, c)))) return;
+  p.hand.splice(p.hand.indexOf("Opportunity"), 1);
+  p.extraTransforms = (p.extraTransforms || 0) + 1;
+  if (logging()) log(`${p.name}: Opportunity — an extra transformation action`);
+}
+
+/** Single-target protection (Sanctuary = untargetable, Bulwark = +30 DEF until next turn).
+ *  Shield the most valuable body the opponent could KO with its biggest swing next combat —
+ *  so a key climber/terminal/Leader survives. Bulwark is preferred when +30 DEF alone saves
+ *  the body (cheaper); Sanctuary is reserved for hits DEF can't stop. */
+function tryProtect(p: Player, opp: Player, turn: number): void {
+  const hasSanc = p.hand.includes("Sanctuary");
+  const hasBul = p.hand.includes("Bulwark");
+  if ((!hasSanc && !hasBul) || turn < 2 || opp.active.length === 0) return;
+  const maxOpp = Math.max(...opp.active.map((o) => effAtk(opp, o)));
+  // Bodies we can protect: our active line, plus the Leader if it's currently attackable.
+  const mine = p.active.filter((u) => !u.shielded);
+  if (p.leader && !p.leader.shielded && p.active.length === 0 && !has(p.leader.t.abil, "leader_protect_royal"))
+    mine.push(p.leader);
+  const bodyValue = (u: Unit) => u.tier * 20 + effAtk(p, u) + u.hp + (u.leader ? 1000 : 0);
+  const killable = (u: Unit, extraDef: number) => maxOpp - (effDef(p, u) + extraDef) >= u.hp;
+
+  // Highest-value body the opponent's biggest hit would KO next combat.
+  const threatened = mine.filter((u) => killable(u, 0)).sort((a, b) => bodyValue(b) - bodyValue(a));
+  if (!threatened.length) return;
+  const target = threatened[0];
+
+  if (hasBul && killable(target, 0) && !killable(target, 30)) {
+    p.hand.splice(p.hand.indexOf("Bulwark"), 1);
+    target.tempDef = (target.tempDef || 0) + 30;
+    if (logging()) log(`${p.name}: Bulwark — ${target.t.name} gains +30 DEF until next turn`);
+  } else if (hasSanc) {
+    p.hand.splice(p.hand.indexOf("Sanctuary"), 1);
+    target.shielded = true;
+    if (logging()) log(`${p.name}: Sanctuary — ${target.t.name} cannot be attacked until next turn`);
+  }
+}
+
+/** Truce: a defensive stall. Play it when the opponent's active board out-pressures
+ *  ours so a slower (late-game) deck survives to its terminals. A deck that's ahead on
+ *  board never wants it (it forfeits its own attack too) — which is exactly what splits
+ *  rush from control. Skips this player's combat this turn AND the opponent's next. */
+function tryTruce(p: Player, opp: Player, turn: number): void {
+  if (!p.hand.includes("Truce") || turn < 2 || opp.active.length === 0) return;
+  const oppAtk = opp.active.reduce((s, u) => s + effAtk(opp, u), 0);
+  const myAtk = p.active.reduce((s, u) => s + effAtk(p, u), 0);
+  const weakest = p.active.length ? Math.min(...p.active.map((u) => u.hp)) : Infinity;
+  const leaderThreatened = p.leader ? oppAtk >= p.leader.hp : false;
+  const wouldLoseABody = oppAtk >= weakest; // their swing can finish our frailest body
+  // Only stall when we're behind the race AND a real loss is coming.
+  if (oppAtk > myAtk && (leaderThreatened || wouldLoseABody)) {
+    p.hand.splice(p.hand.indexOf("Truce"), 1);
+    p.skipCombat = true;
+    opp.skipCombat = true;
+    if (logging()) log(`${p.name}: declares a Truce — no attacks until its next turn`);
   }
 }
 
@@ -387,7 +502,10 @@ export const greedyPolicy: Policy = {
     tryWorldWars(p, opp);
     tryKaethlaanSupport(p, opp);
     tryTutors(p); // assemble the climb before the transform phase
+    trySeeker(p); // order the next draws toward the climb (sets up next turn)
+    tryDraw(p); // cycle Reagent Pouch so fresh cards feed the eval loop below
     tryTakenPrisoner(p);
+    tryLongRoad(p);
 
     // 2) Greedily take the single best eval-improving play, repeat until nothing
     //    in hand makes the board better. Deploys bodies, picks equip bearers, chooses
@@ -417,47 +535,57 @@ export const greedyPolicy: Policy = {
       if (logging()) log(`${p.name}: ${best.label}`);
     }
 
-    // 3) After everything is on the table, duck war-doomed bodies into shelter.
+    // 3) After everything is on the table, duck war-doomed bodies into shelter, and
+    //    call a Truce if we're being overrun (buy a turn toward our late-game payoff).
     shelterWarDoomed(p, opp);
+    tryDisillusion(p); // set up a wanderer body before the transform phase
+    tryOpportunity(p); // bank a bonus transform action if it'll be used
+    tryProtect(p, opp, turn); // surgical: shield a key threatened body first
+    tryTruce(p, opp, turn); // board-wide: stall when broadly overrun
   },
 
   transformAction(p: Player, opp: Player, turn: number): void {
     if (p.leader === null) return; // no transforms while leaderless (the cost of waiting)
-    const base = evalState(p, opp);
-    // Enumerate every affordable transform (Leader included, with its restrictions)
-    // and take the one that yields the strongest resulting board — not the first edge.
-    const cands = boardCharsAndLeader(p);
-    let bestScore = base + 1e-6; // require a strict improvement to spend the action
-    let bestUIdx = -1;
-    let bestDest = "";
-    let bestCost: TransformCost = {};
-    for (let uIdx = 0; uIdx < cands.length; uIdx++) {
-      const u = cands[uIdx];
-      for (const [dest, cost] of u.t.upg) {
-        if (u.leader) {
-          const dt = getCard(dest)!.tier;
-          if (dt < u.tier) continue; // no Leader downgrade
-          if (dt === u.tier && u.tier > 2) continue; // sidegrade only at T1/T2
-        }
-        if (!canAfford(p, u, dest, cost)) continue;
-        const score = scoreAfter(p, opp, (cp, co) =>
-          applyTransform(cp, co, turn, boardCharsAndLeader(cp)[uIdx], dest, cost),
-        );
-        if (score > bestScore) {
-          bestScore = score;
-          bestUIdx = uIdx;
-          bestDest = dest;
-          bestCost = cost;
+    // One action by default, plus any granted by Opportunity this turn.
+    let actions = 1 + (p.extraTransforms || 0);
+    p.extraTransforms = 0;
+    while (actions-- > 0) {
+      const base = evalState(p, opp);
+      // Enumerate every affordable transform (Leader included, with its restrictions)
+      // and take the one that yields the strongest resulting board — not the first edge.
+      const cands = boardCharsAndLeader(p);
+      let bestScore = base + 1e-6; // require a strict improvement to spend the action
+      let bestUIdx = -1;
+      let bestDest = "";
+      let bestCost: TransformCost = {};
+      for (let uIdx = 0; uIdx < cands.length; uIdx++) {
+        const u = cands[uIdx];
+        for (const [dest, cost] of u.t.upg) {
+          if (u.leader) {
+            const dt = getCard(dest)!.tier;
+            if (dt < u.tier) continue; // no Leader downgrade
+            if (dt === u.tier && u.tier > 2) continue; // sidegrade only at T1/T2
+          }
+          if (!canAfford(p, u, dest, cost)) continue;
+          const score = scoreAfter(p, opp, (cp, co) =>
+            applyTransform(cp, co, turn, boardCharsAndLeader(cp)[uIdx], dest, cost),
+          );
+          if (score > bestScore) {
+            bestScore = score;
+            bestUIdx = uIdx;
+            bestDest = dest;
+            bestCost = cost;
+          }
         }
       }
-    }
-    if (bestUIdx < 0) return; // nothing beats holding the action
+      if (bestUIdx < 0) return; // nothing beats holding the (remaining) action(s)
 
-    const u = boardCharsAndLeader(p)[bestUIdx];
-    const nu = applyTransform(p, opp, turn, u, bestDest, bestCost);
-    // Route the new form to the zone that scores better (shelter a non-attacker from a
-    // war, push an attacker to the front).
-    if (!nu.leader) routeZone(p, opp, nu);
+      const u = boardCharsAndLeader(p)[bestUIdx];
+      const nu = applyTransform(p, opp, turn, u, bestDest, bestCost);
+      // Route the new form to the zone that scores better (shelter a non-attacker from a
+      // war, push an attacker to the front).
+      if (!nu.leader) routeZone(p, opp, nu);
+    }
   },
 
   elevate(p: Player, turn: number): void {

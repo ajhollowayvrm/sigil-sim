@@ -13,13 +13,24 @@
 // it before moving on. It also spends the smallest sufficient hitter on each kill so
 // the big swings are saved for the next target. Pure — no React/DOM.
 
-import { beats, darkVsLight } from "./elements";
+import { beats, comps, darkVsLight } from "./elements";
 import { cleanup } from "./effects";
 import { log, logging } from "./log";
-import { canAttack, chars, effAtk, effDef } from "./stats";
+import { canAttack, chars, effAtk, effDef, linkedEquips } from "./stats";
 import type { Player, Unit } from "./types";
 
 const has = (arr: string[], x: string) => arr.includes(x);
+
+/** Sanctified Blade: while Holy War is in play, its Light bearer cannot be targeted by a
+ *  Dark attacker's attacks. Returns true if `t` (on side `tSide`) is protected from an
+ *  attacker whose element is `attackerElem`. */
+function sanctifiedProtected(tSide: Player, t: Unit, attackerElem: string, holyWar: boolean): boolean {
+  return (
+    holyWar &&
+    comps(attackerElem).includes("Dark") &&
+    linkedEquips(tSide, t).some((e) => e.name === "Sanctified Blade")
+  );
+}
 
 /** Resolve one hit (solo or chain). Returns true if the target was KO'd. */
 export function strike(
@@ -33,7 +44,18 @@ export function strike(
 ): boolean {
   const el = element || u.t.elem;
   const atk = atkOverride != null ? atkOverride : effAtk(p, u);
-  const dfn = effDef(opp, tgt);
+  // Bodyguard redirect (Me for You / At Her Side): the defender may pull an individual
+  // attack onto an interposing unit before damage is calculated.
+  let defBonus = 0;
+  const rd = chooseRedirect(p, u, opp, tgt, atk, el, parts);
+  if (rd) {
+    if (logging())
+      log(`  ↪ ${rd.guard.t.name} intercepts the attack on ${tgt.t.name}${rd.defBonus ? ` (+${rd.defBonus} DEF)` : ""}`);
+    if (rd.consume) rd.guard.redirectUsed = true;
+    tgt = rd.guard;
+    defBonus = rd.defBonus;
+  }
+  const dfn = effDef(opp, tgt) + defBonus;
   let ignored = false;
   if (darkVsLight(el, tgt.t.elem) && !p.dark_ignore_used) {
     ignored = true;
@@ -89,16 +111,59 @@ function predictDamage(
   atkOverride?: number,
   element?: string,
   parts = 1,
+  defBonus = 0,
 ): { dmg: number; ko: boolean } {
   const el = element || u.t.elem;
   const atk = atkOverride != null ? atkOverride : effAtk(p, u);
-  const dfn = effDef(opp, tgt);
+  const dfn = effDef(opp, tgt) + defBonus;
   const ignored = darkVsLight(el, tgt.t.elem) && !p.dark_ignore_used;
   if (!ignored && atk <= dfn) return { dmg: 0, ko: false };
   let base = ignored ? atk : atk - dfn;
   if (beats(el, tgt.t.elem)) base += 10 * parts;
   if (has(u.t.abil, "high_atk_bonus") && tgt.t.atk >= 50) base += 20;
   return { dmg: base, ko: tgt.hp - base <= 0 };
+}
+
+interface Redirect {
+  guard: Unit;
+  defBonus: number;
+  consume: boolean;
+}
+
+/** Bodyguard redirect, decided by the DEFENDER (opp) when `u` (on side `p`) declares an
+ *  attack at an individual target `tgt`:
+ *   - **Me for You** (Squire Arlia): once per the attacker's turn, pull the attack onto
+ *     her with +10 DEF for the calc.
+ *   - **At Her Side** (Second in Command Kael): while opp controls an Arlia, pull an
+ *     attack declared at an Arlia onto him (his +10/+10 is a static aura in stats.ts).
+ *  The defender interposes only when it strictly reduces its loss: a KO costs the
+ *  victim's full value, a non-lethal hit costs the HP lost. So a guard takes a hit it
+ *  survives to spare a more valuable body, but is never thrown away to absorb a chip.
+ *  Deterministic (name-ordered, no RNG). */
+function chooseRedirect(p: Player, u: Unit, opp: Player, tgt: Unit, atk: number, el: string, parts: number): Redirect | null {
+  const cands: Redirect[] = [];
+  for (const g of chars(opp)) {
+    if (g === tgt) continue;
+    if (has(g.t.abil, "redirect_meforyou") && !g.redirectUsed) cands.push({ guard: g, defBonus: 10, consume: true });
+    if (has(g.t.abil, "redirect_atherside") && tgt.t.name.includes("Arlia")) cands.push({ guard: g, defBonus: 0, consume: false });
+  }
+  if (!cands.length) return null;
+  const orig = predictDamage(p, u, opp, tgt, atk, el, parts);
+  if (orig.dmg <= 0) return null; // the attack is already blocked — nothing to gain
+
+  // A KO is strictly worse than any chip (cap the chip scale with a big constant), so the
+  // defender never trades a body to prevent mere chip damage.
+  const loss = (t: Unit, pred: { dmg: number; ko: boolean }) => (pred.ko ? defenderValue(opp, t) + 1e6 : pred.dmg);
+  let best: Redirect | null = null;
+  let bestLoss = loss(tgt, orig);
+  for (const c of cands.sort((a, b) => (a.guard.t.name < b.guard.t.name ? -1 : 1))) {
+    const l = loss(c.guard, predictDamage(p, u, opp, c.guard, atk, el, parts, c.defBonus));
+    if (l < bestLoss - 1e-9) {
+      bestLoss = l;
+      best = c;
+    }
+  }
+  return best;
 }
 
 /** Kill priority of an enemy defender. A reachable Leader dwarfs everything (it
@@ -113,7 +178,7 @@ function defenderValue(opp: Player, t: Unit): number {
 
 /** Which enemies can `u` reach right now (default-target rules + its flags).
  *  Exported so the interactive play tool can show a human their legal targets. */
-export function reachable(u: Unit, opp: Player): Unit[] {
+export function reachable(u: Unit, opp: Player, holyWar = false): Unit[] {
   let ts = opp.active.slice();
   if (has(u.t.abil, "hit_passive")) ts = ts.concat(opp.passive);
   const explicitLeader = has(u.t.abil, "hit_leader") && opp.leader;
@@ -121,7 +186,9 @@ export function reachable(u: Unit, opp: Player): Unit[] {
   const leaderOpen = opp.leader && ts.length === 0 && !has(opp.leader.t.abil, "leader_protect_royal");
   if (explicitLeader) ts.push(opp.leader!);
   else if (leaderOpen) ts = [opp.leader!];
-  return ts;
+  // Sanctuary: a shielded body cannot be attacked. Sanctified Blade: a Dark attacker can't
+  // target its Light bearer while Holy War is in play.
+  return ts.filter((t) => !t.shielded && !sanctifiedProtected(opp, t, u.t.elem, holyWar));
 }
 
 /** Pick the next (attacker, target) for the focus-fire planner, or null if no
@@ -129,9 +196,10 @@ export function reachable(u: Unit, opp: Player): Unit[] {
  *  wants dead (lethal-now > damageable > value), then the cheapest attacker that
  *  secures it (least overkill), saving heavy hitters for the next kill. */
 function chooseAttack(p: Player, opp: Player, rem: Unit[]): { a: Unit; t: Unit } | null {
+  const holyWar = p.events.has("Holy War") || opp.events.has("Holy War");
   const reachers = new Map<Unit, Unit[]>();
   for (const u of rem)
-    for (const t of reachable(u, opp)) {
+    for (const t of reachable(u, opp, holyWar)) {
       const list = reachers.get(t);
       if (list) list.push(u);
       else reachers.set(t, [u]);
@@ -164,7 +232,7 @@ function chooseAttack(p: Player, opp: Player, rem: Unit[]): { a: Unit; t: Unit }
   // If the pick would be fully blocked but some other attack is productive, prefer that.
   if (predictDamage(p, a, opp, best).dmg === 0) {
     for (const u of rem)
-      for (const t of reachable(u, opp)) if (predictDamage(p, u, opp, t).dmg > 0) return { a: u, t };
+      for (const t of reachable(u, opp, holyWar)) if (predictDamage(p, u, opp, t).dmg > 0) return { a: u, t };
   }
   return { a, t: best };
 }
@@ -206,12 +274,14 @@ function pickChainTarget(p: Player, opp: Player, targets: Unit[], sum: number, e
 
 /** Resolve all available chains for p. Returns true if the opposing Leader died. */
 export function doChains(p: Player, opp: Player, used: Set<Unit>): boolean {
+  const holyWar = p.events.has("Holy War") || opp.events.has("Holy War");
   // The Broken March: a War-Torn swarm chain (sum of ATK to one target) at 2+.
   if (p.events.has("The Broken March")) {
     const wt = p.active.filter((u) => u.wartorn && !used.has(u));
-    if (wt.length >= 2 && opp.active.length) {
+    const bmTargets = opp.active.filter((t) => !t.shielded && (!wt.length || !sanctifiedProtected(opp, t, wt[0].t.elem, holyWar)));
+    if (wt.length >= 2 && bmTargets.length) {
       const s = wt.reduce((x, u) => x + effAtk(p, u), 0);
-      const tgt = pickChainTarget(p, opp, opp.active.slice(), s, wt[0].t.elem, wt.length);
+      const tgt = pickChainTarget(p, opp, bmTargets, s, wt[0].t.elem, wt.length);
       if (logging()) log(`  ⛓ Broken March chain (${wt.map((x) => x.t.name).join("+")}) vs ${tgt.t.name}`);
       if (strike(p, wt[0], opp, tgt, s, wt[0].t.elem, wt.length)) cleanup(opp);
       for (const x of wt) used.add(x);
@@ -219,7 +289,7 @@ export function doChains(p: Player, opp: Player, used: Set<Unit>): boolean {
     }
   }
   for (const u of p.active.concat(p.passive)) {
-    const ch = u.t.chain;
+    const ch = u.t.chain || u.grantedChain; // a Banner of the Realm grant counts as this body's chain
     if (!ch || used.has(u)) continue;
     let pool = (ch.active_only ? p.active : p.active.concat(p.passive)).filter((x) => !used.has(x) && x !== u);
     if (p.leader && !ch.active_only) pool.push(p.leader);
@@ -243,7 +313,8 @@ export function doChains(p: Player, opp: Player, used: Set<Unit>): boolean {
       if (opp.leader && opp.leader.hp <= 0) return true;
       continue;
     }
-    const targets = opp.active.length ? opp.active.slice() : opp.leader && opp.active.length === 0 ? [opp.leader] : [];
+    const attackable = opp.active.filter((t) => !t.shielded && !sanctifiedProtected(opp, t, u.t.elem, holyWar));
+    const targets = attackable.length ? attackable : opp.leader && opp.active.length === 0 ? [opp.leader] : [];
     if (targets.length === 0) {
       for (const x of parts) used.add(x);
       continue;
@@ -261,6 +332,12 @@ export function doChains(p: Player, opp: Player, used: Set<Unit>): boolean {
 /** Combat phase (turn 3+). Chains resolve first, then the coordinated solo planner;
  *  the Leader is part of the attacking squad and focus-fires alongside the others. */
 export function combat(p: Player, opp: Player, turn: number): void {
+  // Truce: a declared truce suppresses (and consumes) this player's combat phase.
+  if (p.skipCombat) {
+    p.skipCombat = false;
+    if (logging()) log(`${p.name}: Truce holds — no attacks this turn`);
+    return;
+  }
   if (turn < 3) return;
   p.dark_ignore_used = false;
   const used = new Set<Unit>();

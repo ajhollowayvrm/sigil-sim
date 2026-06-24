@@ -40,6 +40,7 @@ export function makePlayer(deck: string[], name: string, rnd: RNG): Player {
     leader: null,
     lockout: false,
     lose: false,
+    transformedThisTurn: false,
     dark_ignore_used: false,
     rnd,
   };

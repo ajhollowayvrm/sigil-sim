@@ -20,31 +20,33 @@ export function deckLoyalist(): string[] {
       "Mage Arlia",
       "Squire Arlia",
       "Captain Arlia of the Royal Army",
+      // Kael's LOYAL road — lives here, not in War, because The King's Blade's whole
+      // payoff keys off King Honathan (mix-n-match: Kael spans War's outlaw road and
+      // Loyalist's loyal road). Honathan's aura + the riders make Shadow/King's Blade sing.
+      "Kael, Destined Trainee",
+      "Kael, Destined Trainee",
+      "Swiftblade Kael",
+      "Swiftblade Kael",
+      "Kael the Shadow",
+      "The King's Blade",
       "Kaethlaan Recruit",
       "Kaethlaan Recruit",
-      "Kaethlaan Recruit",
+      "Kaethlaan Knight",
       "Kaethlaan Knight",
       "Kaethlaan Knight",
       "Sword of the Realm",
+      "Sword of the Realm",
       "Strango, Knight Trainer",
       "Strango, Knight Trainer",
-      "Brutal Fighter Strango",
-      "Kaethlaan Archer",
       "Kaethlaan Archer",
       "Kaethlaan Sniper",
       "Thomas, Scared Recruit",
       "Thomas, Scared Recruit",
       "Soldier Thomas",
       "Thomas the Brave",
-      "Channel Being",
-      "Channel Being",
-      "Channel Adept",
-      "Hierophant of the Channel",
-      "Touched Child Hresheeba",
-      "Old Maid Hresheeba",
     ],
-    ["Instructional Sword", "Instructional Tome", "Kaethlaan Banner", "Twin Daggers", "Vital Charm", "Field Rations", "Tower Shield"],
-    ["Close the Gates", "Reinforce the Front Lines", "Reinforce the Front Lines", "Field Promotion", "Field Promotion"],
+    ["Instructional Sword", "Instructional Tome", "Kaethlaan Banner", "Twin Daggers", "Vital Charm"],
+    ["Close the Gates", "Reinforce the Front Lines", "Field Promotion", "Field Promotion", "Conscription Order", "Truce", "Truce", "Sanctuary"],
   );
 }
 
@@ -75,19 +77,19 @@ export function deckGoblin(): string[] {
       "Murlifect",
       "Stoneback",
       "Stoneback",
-      "Galewing",
-      "Cinderpel",
       "Sootcrawler",
       "Pyrnit",
     ],
-    ["Goblin War", "Goblin War", "Horde Frenzy", "Horde Frenzy"],
+    ["Goblin War", "Goblin War", "Horde Frenzy", "Stoneback", "Warren Muster", "Warren Muster"],
     ["Goblin Shiv", "Goblin Shiv", "Goblin Cleaver", "Warboss' Maul", "Tower Shield", "Buckler", "Buckler", "Twin Daggers"],
   );
 }
 
 export function deckWar(): string[] {
-  // 40 cards built for climb consistency: 3× each base + hub of the Kael (loyal road)
-  // and Illyego lines, plus tutors (Field Promotion / War Effort) to find the next form.
+  // 40 cards. Round 1 rebuild: commit to the self-sufficient Outlaw Kael road
+  // (Captured → Runaway → Killer → The Silent, which needs no Honathan) + the
+  // Illyego war engine + a War-Torn payoff (A Man Bred for War, now castable).
+  // Dropped the loyal road's King's Blade (its payoff is dead without Honathan).
   return D(
     [
       "Kael, Destined Trainee",
@@ -96,9 +98,13 @@ export function deckWar(): string[] {
       "Swiftblade Kael",
       "Swiftblade Kael",
       "Swiftblade Kael",
-      "Kael the Shadow",
-      "Kael the Shadow",
-      "The King's Blade",
+      "Kael the Captured",
+      "Kael the Captured",
+      "Kael the Runaway",
+      "Kael the Runaway",
+      "Kael the Killer",
+      "Kael the Killer",
+      "The Silent",
       "Illyego, the Orphan",
       "Illyego, the Orphan",
       "Illyego, the Orphan",
@@ -109,10 +115,6 @@ export function deckWar(): string[] {
       "Illyego, the Conqueror",
       "A Man Bred for War",
       "A Man Bred for War",
-      "Sootcrawler",
-      "Sootcrawler",
-      "Pyrnit",
-      "Bogfang",
     ],
     [
       "War",
@@ -125,15 +127,15 @@ export function deckWar(): string[] {
       "Field Promotion",
       "Field Promotion",
       "War Effort",
+      "War Effort",
+      "Sanctuary",
     ],
     [
       "Whetstone",
-      "Whetstone",
       "Berserker's Brand",
       "Twin Daggers",
-      "Vital Charm",
       "Back-Alley Blade",
-      "Tidecaller's Pearl",
+      "Vital Charm",
     ],
   );
 }
@@ -143,8 +145,6 @@ export function deckWild(): string[] {
     [
       "Bogfang",
       "Bogfang",
-      "Bogfang",
-      "Stoneback",
       "Stoneback",
       "Murlifect",
       "Murlifect",
@@ -179,7 +179,43 @@ export function deckWild(): string[] {
       "Metamorphosis",
       "Metamorphosis",
     ],
-    ["Twin Daggers", "Whetstone", "Whetstone"],
+    ["Twin Daggers", "Whetstone", "Whetstone", "Call of the Wild", "Call of the Wild"],
+  );
+}
+
+export function deckDivineChannel(): string[] {
+  // The Divine Channel archetype: climb Arlia to THE ASCENDED (the capstone whose
+  // stats = T3 items consumed ×20, and whose The Channel chain is an AoE board-wipe),
+  // backed by Channel-body chain enablers (keepers shrink the chain). Slow combo:
+  // Arlia → Mage → Wandering Acolyte (needs Disillusioned) → Ascended (needs T3 items).
+  return D(
+    [
+      "Channel Being",
+      "Channel Being",
+      "Channel Being",
+      "Channel Being",
+      "Channel Adept",
+      "Channel Adept",
+      "Channel Adept",
+      "Hierophant of the Channel",
+      "Hierophant of the Channel",
+      "Touched Child Hresheeba",
+      "Touched Child Hresheeba",
+      "Touched Child Hresheeba",
+      "Old Maid Hresheeba",
+      "Old Maid Hresheeba",
+      "Old Maid Hresheeba",
+      "Old Maid Hresheeba",
+      "Arlia, Destined Trainee",
+      "Arlia, Destined Trainee",
+      "Mage Arlia",
+      "Mage Arlia",
+      "The Wandering Acolyte Arlia",
+      "The Wandering Acolyte Arlia",
+      "The Ascended",
+    ],
+    ["Call of the Channel", "Call of the Channel", "Call of the Channel", "Field Promotion", "Field Promotion", "Disillusioned", "Reinforce the Front Lines", "Truce", "Truce", "Sanctuary", "Sanctuary", "Bulwark"],
+    ["Twin Daggers", "Instructional Tome", "Instructional Tome", "Vital Charm", "Relic of the Forsaken"],
   );
 }
 
@@ -188,6 +224,7 @@ export const DECKS: Record<string, () => string[]> = {
   Loyalist: deckLoyalist,
   Goblin: deckGoblin,
   Wild: deckWild,
+  DivineChannel: deckDivineChannel,
 };
 
 export const DECK_NAMES = Object.keys(DECKS);

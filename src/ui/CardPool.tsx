@@ -24,18 +24,31 @@ function Coverage() {
         <b>Card effects — modeled:</b>{" "}
         <span className="ok">
           stat auras (Honathan, Mages Guild, Goblin Captain, Crusade, Horde Frenzy, Rally to War) · entry triggers (Mage Arlia,
-          Embermaw, Lumenkit, Hollowed Stag) · on-KO draws (King's Blade, Horde Frenzy) · heal-over-time (Regrow, The Long Road)
-          · Blood Money kill-scaling · The Silent +20 vs high-ATK · element-conditional equips · cannot-become-War-Torn · Holy
-          War capture · The Broken March War-Torn chain
+          Embermaw, Lumenkit, Hollowed Stag) · on-KO draws (King's Blade, Horde Frenzy) · heal-over-time (Regrow)
+          · Blood Money kill-scaling · The Silent +20 vs high-ATK · element-conditional equips (Water/Fire) · cannot-become-War-Torn
+          · Holy War capture · The Broken March War-Torn chain · affiliation tutors (War Effort, Warren Muster, Call of the Wild,
+          Conscription Order, Call of the Channel — incl. its discard cost) &amp; form tutor (Field Promotion) · Captain Arlia's My
+          Liege (+30/+30 w/ Honathan) · The Ascended (stats = T3 items consumed ×20) &amp; its The Channel AoE chain · protection
+          (Truce, Sanctuary, Bulwark) · conditional equips (Goblin War-Banner +30 in a Goblin War, Sanctified Blade anti-Dark in
+          Holy War) · Banner of the Realm chain-grant · Opportunity (extra transform) · Disillusioned state (A Crisis of Faith,
+          Cast Out) &amp; The Long Road HoT · bodyguard redirect (Me for You once/turn +10 DEF, At Her Side) · Seeker (top-3 deck
+          reorder) · Protection of The Divine (bearer ignores all item/event effects, friendly or hostile)
+        </span>
+        <br />
+        <br />
+        <b>Modeled but inert (no card triggers them yet):</b>{" "}
+        <span className="approx">
+          negate-and-destroy &amp; targeting immunities (Magical Shield, Feliefnir's anti-equip clause, My Liege's
+          manipulation/no-change-control clause) — the rules are wired through one gate, but the pool prints no destroy /
+          manipulation / opposing-equip-targeting card to set them off (the ruleset now permits destroy effects, so this is the
+          forward hook)
         </span>
         <br />
         <br />
         <b>Approximated / not yet modeled:</b>{" "}
         <span className="approx">
-          on-entry effects outside the sample decks · Max-HP modifiers (Plague / Medical Advancement cap-only math) · redirect
-          (Me for You, At Her Side) · negate-and-destroy &amp; immunities (Magical Shield, Protection of the Divine, Feliefnir) —
-          no destroy/manipulation cards exist to trigger them · The Ascended variable stats · deck-search (Call of the Channel,
-          Seeker) · mulligan &amp; hand-size (open rules questions)
+          Max-HP modifiers (Plague / Medical Advancement cap-only math) · War College (no-op: transforms cost no items in this
+          engine) · A Crisis of Faith / Cast Out persistent riders · mulligan &amp; hand-size (open rules questions)
         </span>{" "}
         <span className="no">· love-road marriage cards (stats TBD — not simulatable yet)</span>
       </div>

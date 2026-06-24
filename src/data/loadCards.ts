@@ -108,6 +108,16 @@ for (const row of characterRows) {
     transformIn: (row.TransformIn ?? "").trim() || undefined,
     flavor: (row.Flavor ?? "").trim() || undefined,
   };
+  // The Ascended (§6): printed stats are variable (= T3 items consumed ×20), so the
+  // CSV carries `??`. Model it as a base-0 body whose stats are filled in at transform
+  // time (engine/transform.ts reads the `ascended_variable` flag). Now simulatable.
+  if (name === "The Ascended") {
+    card.hp = 0;
+    card.atk = 0;
+    card.deff = 0;
+    card.simulatable = true;
+    card.abil.push("ascended_variable");
+  }
   CHARS.set(name, card);
 }
 
@@ -125,6 +135,17 @@ for (const dest of CHARS.values()) {
   if (!o.simulatable || !dest.simulatable) continue; // never instantiate TBD forms
   const cost: TransformCost = TRANSFORM_COST[dest.name] ?? {};
   o.upg.push([dest.name, cost]);
+}
+
+// Reverse of the transform graph: each destination's origin form(s) + the same
+// printed cost — so a card can show where it transforms FROM, symmetric to climbSteps.
+const REVERSE = new Map<string, [string, TransformCost][]>();
+for (const o of CHARS.values()) {
+  for (const [dest, cost] of o.upg) {
+    const arr = REVERSE.get(dest) ?? [];
+    arr.push([o.name, cost]);
+    REVERSE.set(dest, arr);
+  }
 }
 
 /** §5.1 — only T1 bases or standalones printing a play permission may be hard-cast. */
@@ -168,6 +189,24 @@ export function climbSteps(name: string): ClimbStep[] {
   const steps: ClimbStep[] = c.upg.map(([dest, cost]) => ({ dest, needs: describeCost(cost) }));
   if (c.affils.includes("Wild") && c.tier === 1)
     steps.push({ dest: "any T2 Wild", needs: ["a Metamorphosis card (free — doesn't use your transformation)"] });
+  return steps;
+}
+
+/** Where this character transforms FROM: its origin form(s) and the conditions
+ *  printed on this card's transform path. The mirror image of climbSteps — T1
+ *  bases return nothing, terminals return their lineage, middle forms return both. */
+export interface FromStep {
+  src: string;
+  needs: string[];
+}
+
+export function transformsFrom(name: string): FromStep[] {
+  const c = CHARS.get(name);
+  if (!c) return [];
+  const steps: FromStep[] = (REVERSE.get(name) ?? []).map(([src, cost]) => ({ src, needs: describeCost(cost) }));
+  // Wilds carry no fixed lineage — a T2 Wild is reached from any T1 Wild via Metamorphosis.
+  if (c.affils.includes("Wild") && c.tier === 2)
+    steps.push({ src: "any T1 Wild", needs: ["a Metamorphosis card (free — doesn't use your transformation)"] });
   return steps;
 }
 

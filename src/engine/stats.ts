@@ -4,7 +4,7 @@
 import { comps } from "./elements";
 import type { Card, Equip, Player, Unit } from "./types";
 import { EQUIP, getEventTier, getItemTier, itemAnyTier, itemBearerInclude } from "../data/loadCards";
-import { ITEM_BEARER_AFFIL, KAETHLAAN_AFFILS } from "../data/effects-map";
+import { ITEM_BEARER_AFFIL, ITEM_BEARER_ELEM, KAETHLAAN_AFFILS } from "../data/effects-map";
 
 /** True if a unit belongs to the Kaethlaan sphere (Royal Army / Mages Guild / Divine
  *  Channel / King's Court / Kaethlaan…). Used by Banner, Close the Gates, Reinforce. */
@@ -90,44 +90,78 @@ export function linkedEquips(p: Player, u: Unit): Equip[] {
 
 const has = (arr: string[], x: string) => arr.includes(x);
 
+/** Protection of The Divine: the bearer "cannot be affected by item or event effects,
+ *  whether friendly or hostile." We read that as: NO equipment-stat contribution, NO
+ *  persistent-event aura (Rally/Crusade/Horde/Kaethlaan Banner), NO war attrition, and
+ *  NO item/event heal or shield reach the bearer. What still applies is everything that
+ *  is NOT an item or event: the Leader tier bonus (a rule), this character's OWN printed
+ *  ability, and auras sourced from other *characters* (Honathan, Mage Arlia, Goblin
+ *  Captain — those are character abilities, not items/events).
+ *  TODO(v0.8): confirm the exact scope of "item or event effects" against Box (this card
+ *  is RECONSTRUCTED — see its CSV Notes). */
+export function immuneItemEvent(p: Player, u: Unit): boolean {
+  return linkedEquips(p, u).some((e) => e.name === "Protection of The Divine");
+}
+
 export function effAtk(p: Player, u: Unit): number {
   let a = u.t.atk + u.mods.atk;
   if (u.leader) a += LB[u.tier];
-  const aura = !has(u.t.abil, "no_aura");
-  if (aura && chars(p).some((x) => has(x.t.abil, "aura_honathan")) && has(u.t.affils, "Royal Army")) a += 10;
+  const aura = !has(u.t.abil, "no_aura") && !u.disillusioned; // Disillusioned bodies forsake your auras
+  // Honathan's board-wide +10 ATK to Royal Army was Loyalist's runaway early-mid engine.
+  // Narrowed to King's Court only (his inner circle); the broad Royal Army buff is gone.
+  if (aura && chars(p).some((x) => has(x.t.abil, "aura_honathan")) && has(u.t.affils, "King's Court (Kaethlaan)")) a += 10;
   if (has(u.t.abil, "honathan_buff") && chars(p).some((x) => has(x.t.abil, "aura_honathan"))) a += 10;
+  if (has(u.t.abil, "my_liege") && chars(p).some((x) => has(x.t.abil, "aura_honathan"))) a += 30; // Captain Arlia's My Liege
+
   if (aura && chars(p).some((x) => has(x.t.abil, "aura_mages")) && has(u.t.affils, "Mages Guild")) a += 10;
   if (aura && chars(p).some((x) => has(x.t.abil, "aura_goblin") && x !== u) && has(u.t.affils, "Goblin")) a += 10;
+  if (aura && chars(p).some((x) => has(x.t.abil, "aura_channel") && x !== u) && has(u.t.affils, "Divine Channel")) a += 10;
   if (has(u.t.abil, "blood_money")) a += 10 * u.kills;
   if (has(u.t.abil, "war_atk") && hasWar(p)) a += 10;
   if (has(u.t.abil, "forged_in_chains") && u.wartorn) a += 20;
-  if (p.events.has("Rally to War") && u.zone === "active" && hasWar(p)) a += 10;
-  if (p.events.has("Crusade") && p.events.has("Holy War") && comps(u.t.elem).includes("Light")) a += 10;
-  if (p.events.has("Horde Frenzy") && p.events.has("Goblin War") && has(u.t.affils, "Goblin")) a += 10;
-  // Kaethlaan Banner: a borne standard rallies the whole Kaethlaan army (+10 ATK).
-  if (aura && isKaethlaan(u) && p.pcards.some((e) => isEquipObj(e) && e.name === "Kaethlaan Banner")) a += 10;
-  for (const e of linkedEquips(p, u)) {
-    a += e.eff.atk || 0;
-    if (e.eff.water_atk && comps(u.t.elem).includes("Water")) a += e.eff.water_atk;
-    if (e.eff.war_atk && hasWar(p)) a += e.eff.war_atk;
+  // At Her Side: Second in Command Kael has +10 ATK while you control Arlia (his own ability).
+  if (has(u.t.abil, "redirect_atherside") && chars(p).some((x) => x.t.name.includes("Arlia"))) a += 10;
+  // Item/event effects (persistent-event auras + equipment) — blocked for a Protection of
+  // The Divine bearer. Character auras above are not items/events and still apply.
+  if (!immuneItemEvent(p, u)) {
+    if (p.events.has("Rally to War") && u.zone === "active" && hasWar(p)) a += 10;
+    if (p.events.has("Crusade") && p.events.has("Holy War") && comps(u.t.elem).includes("Light")) a += 10;
+    if (p.events.has("Horde Frenzy") && p.events.has("Goblin War") && has(u.t.affils, "Goblin")) a += 10;
+    // Kaethlaan Banner: a borne standard rallies the whole Kaethlaan army (+10 ATK).
+    if (aura && isKaethlaan(u) && p.pcards.some((e) => isEquipObj(e) && e.name === "Kaethlaan Banner")) a += 10;
+    for (const e of linkedEquips(p, u)) {
+      a += e.eff.atk || 0;
+      if (e.eff.water_atk && comps(u.t.elem).includes("Water")) a += e.eff.water_atk;
+      if (e.eff.fire_atk && comps(u.t.elem).includes("Fire")) a += e.eff.fire_atk;
+      if (e.eff.war_atk && hasWar(p)) a += e.eff.war_atk;
+      if (e.eff.goblinwar_atk && p.events.has("Goblin War")) a += e.eff.goblinwar_atk;
+    }
   }
   return Math.max(0, a);
 }
 
 export function effDef(p: Player, u: Unit): number {
+  const imm = immuneItemEvent(p, u);
   let d = u.t.deff + u.mods.deff;
   if (u.leader) d += LB[u.tier];
-  if (chars(p).some((x) => has(x.t.abil, "aura_honathan")) && has(u.t.affils, "Royal Army") && !has(u.t.abil, "no_aura")) d += 10;
-  if (has(u.t.abil, "honathan_buff") && chars(p).some((x) => has(x.t.abil, "aura_honathan"))) d += 10;
+  // Honathan's aura is +10 ATK only (balance-log: its +10 DEF half made Loyalist a runaway
+  // wall). The ATK half lives in effAtk; no DEF contribution here.
   if (has(u.t.abil, "forged_in_chains") && u.wartorn) d += 20;
-  if (p.events.has("Crusade") && p.events.has("Holy War") && comps(u.t.elem).includes("Light")) d += 10;
-  for (const e of linkedEquips(p, u)) d += e.eff.deff || 0;
+  if (has(u.t.abil, "my_liege") && chars(p).some((x) => has(x.t.abil, "aura_honathan"))) d += 30; // Captain Arlia's My Liege
+  if (has(u.t.abil, "redirect_atherside") && chars(p).some((x) => x.t.name.includes("Arlia"))) d += 10; // At Her Side
+  // Item/event DEF: Bulwark's tempDef and Crusade's aura are EVENT effects; equip DEF is an
+  // ITEM effect. All are blocked for a Protection of The Divine bearer.
+  if (!imm) {
+    d += u.tempDef || 0; // Bulwark
+    if (p.events.has("Crusade") && p.events.has("Holy War") && comps(u.t.elem).includes("Light")) d += 10;
+    for (const e of linkedEquips(p, u)) d += e.eff.deff || 0;
+  }
   return Math.max(0, d);
 }
 
 export function effMaxhp(p: Player, u: Unit): number {
   let h = u.t.hp + u.mods.hp + (u.leader ? LB[u.tier] : 0);
-  for (const e of linkedEquips(p, u)) h += e.eff.maxhp || 0;
+  if (!immuneItemEvent(p, u)) for (const e of linkedEquips(p, u)) h += e.eff.maxhp || 0;
   return h;
 }
 
@@ -155,6 +189,8 @@ export function canEquip(item: string, bearer: Unit): boolean {
     const ok = reqAffil === "Kaethlaan" ? isKaethlaan(bearer) : has(bearer.t.affils, reqAffil);
     if (!ok) return false;
   }
+  const reqElem = ITEM_BEARER_ELEM[item];
+  if (reqElem && !comps(bearer.t.elem).includes(reqElem)) return false;
   if (itemAnyTier(item) || has(bearer.t.abil, "bears_any_tier")) return true;
   return getItemTier(item) <= bearer.tier;
 }

@@ -17,7 +17,9 @@
     "test:ui": "vitest --ui",
     "prebatch": "tsx scripts/embed-csv.ts",
     "batch": "tsx scripts/run-batch.ts",
-    "pull-from-box": "tsx scripts/pull-from-box.ts"
+    "pull-from-box": "tsx scripts/pull-from-box.ts",
+    "preparity": "tsx scripts/embed-csv.ts",
+    "parity": "tsx scripts/parity.ts"
   },
   "dependencies": {
     "papaparse": "^5.4.1",
