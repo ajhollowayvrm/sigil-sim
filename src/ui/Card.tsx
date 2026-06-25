@@ -4,20 +4,24 @@ import { elemClass } from "./util";
 /** A persistent event sitting in one of its controller's board slots. */
 export function EventToken({ name, onCard }: { name: string; onCard: (n: string) => void }) {
   return (
-    <div className="card eventtok" onClick={() => onCard(name)} title="Persistent event (occupies a slot)">
+    <div className="card eventtok" onClick={(e) => { e.stopPropagation(); onCard(name); }} title="Persistent event (occupies a slot)">
       <div className="evtag">⚑ event</div>
       <div className="cn">{name}</div>
     </div>
   );
 }
 
-/** Optional drag-and-drop wiring for a card (used by PlayBoard; inert elsewhere). */
+/** Optional drag-and-drop + tap wiring for a card (used by PlayBoard; inert elsewhere). */
 export interface CardDnd {
   draggable?: boolean;
   onDragStart?: () => void;
   onDragEnd?: () => void;
   canDrop?: boolean; // this card is a valid drop target for the current drag
   onDrop?: () => void;
+  // Tap-to-target (works on touch, where HTML5 drag does not): if set, a click on
+  // the card runs onTap (select-as-source or act-on-target) instead of inspecting it.
+  onTap?: () => void;
+  selected?: boolean; // currently armed as the tap source
 }
 
 export function Card({ u, onCard, dnd }: { u: UnitSnap | null; onCard: (name: string) => void; dnd?: CardDnd }) {
@@ -27,8 +31,8 @@ export function Card({ u, onCard, dnd }: { u: UnitSnap | null; onCard: (name: st
     <div
       className={`card ${elemClass(u.elem)} ${u.leader ? "leader" : ""} ${u.hp <= 0 ? "dead" : ""}${
         dnd?.draggable ? " draggable" : ""
-      }${dnd?.canDrop ? " candrop" : ""}`}
-      onClick={() => onCard(u.name)}
+      }${dnd?.canDrop ? " candrop" : ""}${dnd?.selected ? " selected" : ""}`}
+      onClick={(e) => { e.stopPropagation(); if (dnd?.onTap) dnd.onTap(); else onCard(u.name); }}
       draggable={!!dnd?.draggable}
       onDragStart={dnd?.draggable ? () => dnd.onDragStart?.() : undefined}
       onDragEnd={dnd?.draggable ? () => dnd.onDragEnd?.() : undefined}

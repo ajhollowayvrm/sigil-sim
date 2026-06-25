@@ -140,6 +140,10 @@ details summary { cursor: pointer; color: var(--mut); font-size: 12px; }
 .actionbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--panel2); border: 1px solid var(--acc); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
 .actionbar .ahint { color: var(--ink); font-size: 13px; }
 .actionbar .spacer { flex: 1; }
+.selchip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--acc); background: var(--panel); border: 1px solid var(--acc); border-radius: 999px; padding: 3px 6px 3px 10px; }
+.cancelsel { background: none; border: none; color: var(--mut); cursor: pointer; padding: 0 4px; font-size: 12px; font-weight: 700; }
+.cancelsel:hover { color: var(--ink); }
+.card.selected, .handcard.selected { outline: 2px solid var(--acc); outline-offset: 1px; filter: brightness(1.12); }
 .allmoves { display: flex; gap: 8px; flex-wrap: wrap; flex-basis: 100%; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
 
 /* ---- tabletop play board ---- */
@@ -169,4 +173,15 @@ details summary { cursor: pointer; color: var(--mut); font-size: 12px; }
 .loglines .li { padding: 1px 0; }
 .loglines .li.sub { color: var(--mut); padding-left: 8px; }
 
-@media (max-width: 760px) { .boards, .logwrap, .decklist, .epgrid { grid-template-columns: 1fr; } .card { width: 46%; } }
+@media (max-width: 760px) {
+  .boards, .logwrap, .decklist, .epgrid { grid-template-columns: 1fr; }
+  .card { width: 46%; }
+  /* tabletop: stack the Leader above the zones; let cards breathe on a phone */
+  .table { padding: 8px; }
+  .boardside { padding: 6px; }
+  .band { flex-direction: column; gap: 8px; }
+  .leadercol { min-width: 0; }
+  .leadercol .card { width: 60%; }
+  .actionbar { gap: 8px; }
+  .actionbar .spacer { display: none; }
+}

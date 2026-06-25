@@ -24,10 +24,10 @@ const KIND_LABEL: Record<string, string> = {
 
 // One-line "how to act" hint per decision kind — the board is the primary surface.
 const KIND_HINT: Record<string, string> = {
-  main: "Drag a hand card onto a zone to play it, or onto one of your bodies to equip / transform it.",
-  transform: "Drag a hand form onto the body it upgrades.",
-  combat: "Drag one of your bodies onto an enemy to attack.",
-  elevate: "Drag a body onto your Leader slot to crown it.",
+  main: "Drag or tap a hand card, then a zone to play it — or a body to equip / transform it.",
+  transform: "Drag or tap a hand form, then the body it upgrades.",
+  combat: "Drag or tap one of your bodies, then an enemy to attack it.",
+  elevate: "Drag or tap a body, then your Leader slot to crown it.",
 };
 
 // What the human is currently dragging.
@@ -36,11 +36,14 @@ type Drag = { kind: "hand"; card: string } | { kind: "unit"; name: string; idx: 
 // Everything a Side needs to wire drag-and-drop. Undefined ⇒ inert (watch / non-acting side).
 interface DnD {
   drag: Drag | null;
+  selected: Drag | null; // tap-armed source (mirrors drag, for touch)
   kind?: Phase; // the pending decision kind
   isActor: boolean; // this side is the one to act
   startHand: (card: string) => void;
   startUnit: (name: string, idx: number) => void;
   end: () => void;
+  selectHand: (card: string) => void; // tap a hand card to arm/disarm it
+  selectUnit: (name: string, idx: number) => void; // tap a body to arm/disarm it
   dropZone: (zone: "active" | "passive") => void;
   dropUnit: (name: string, idx: number) => void;
   dropLeader: () => void;
@@ -70,28 +73,38 @@ function Side({
   dnd?: DnD;
 }) {
   const drag = dnd?.drag ?? null;
+  const sel = dnd?.selected ?? null;
+  const armed = drag ?? sel; // the currently-armed source, whether dragged or tapped
   const k = dnd?.kind;
   const mine = !!dnd?.isActor;
 
-  const handDraggable = mine && (k === "main" || k === "transform") && !hideHand;
-  const zoneCanDrop = (zone: "active" | "passive") => mine && drag?.kind === "hand" && !!dnd?.canZone(zone);
+  // A source can be picked up (drag) or armed (tap). Highlights/legality use `armed`.
+  const handSource = mine && (k === "main" || k === "transform") && !hideHand;
+  const zoneCanDrop = (zone: "active" | "passive") => mine && armed?.kind === "hand" && !!dnd?.canZone(zone);
   const unitCanDrop = (cname: string, idx: number) => {
-    if (!drag || !dnd) return false;
-    const sideOk = drag.kind === "hand" ? mine : !mine; // play-on-friendly vs attack-enemy
+    if (!armed || !dnd) return false;
+    const sideOk = armed.kind === "hand" ? mine : !mine; // play-on-friendly vs attack-enemy
     return sideOk && dnd.canUnit(cname, idx);
   };
-  const leaderZoneCanDrop = mine && drag?.kind === "unit" && k === "elevate" && !!dnd?.canLeader();
+  const leaderZoneCanDrop = mine && armed?.kind === "unit" && k === "elevate" && !!dnd?.canLeader();
   // Combat: only active bodies + the Leader attack. Elevation: from active or passive.
   const zoneDraggable = (zone: "active" | "passive" | "leader") =>
     mine && ((k === "combat" && zone !== "passive") || (k === "elevate" && zone !== "leader"));
 
-  const unitDnd = (u: { name: string }, idx: number, zone: "active" | "passive" | "leader") => ({
-    draggable: zoneDraggable(zone),
-    onDragStart: () => dnd?.startUnit(u.name, idx),
-    onDragEnd: () => dnd?.end(),
-    canDrop: unitCanDrop(u.name, idx),
-    onDrop: () => dnd?.dropUnit(u.name, idx),
-  });
+  const unitDnd = (u: { name: string }, idx: number, zone: "active" | "passive" | "leader") => {
+    const isSource = zoneDraggable(zone);
+    const isTarget = unitCanDrop(u.name, idx);
+    return {
+      draggable: isSource,
+      onDragStart: () => dnd?.startUnit(u.name, idx),
+      onDragEnd: () => dnd?.end(),
+      canDrop: isTarget,
+      onDrop: () => dnd?.dropUnit(u.name, idx),
+      // tap: act on a target, else arm/disarm a source, else fall through to inspect
+      onTap: isTarget ? () => dnd?.dropUnit(u.name, idx) : isSource ? () => dnd?.selectUnit(u.name, idx) : undefined,
+      selected: sel?.kind === "unit" && sel.name === u.name && sel.idx === idx,
+    };
+  };
 
   const zoneRow = (zone: "active" | "passive") => {
     const units = zone === "active" ? s.active : s.passive;
@@ -102,6 +115,7 @@ function Side({
         className={`zone${hot ? " candrop" : ""}`}
         onDragOver={hot ? (e) => e.preventDefault() : undefined}
         onDrop={hot ? (e) => { e.preventDefault(); dnd?.dropZone(zone); } : undefined}
+        onClick={hot ? () => dnd?.dropZone(zone) : undefined}
       >
         <div className="zlabel">{zone}</div>
         <div className="slots">
@@ -122,6 +136,7 @@ function Side({
       className={`leadercol${leaderZoneCanDrop ? " candrop" : ""}`}
       onDragOver={leaderZoneCanDrop ? (e) => e.preventDefault() : undefined}
       onDrop={leaderZoneCanDrop ? (e) => { e.preventDefault(); dnd?.dropLeader(); } : undefined}
+      onClick={leaderZoneCanDrop ? () => dnd?.dropLeader() : undefined}
     >
       <div className="zlabel">Leader</div>
       <Card u={s.leader} onCard={onCard} dnd={s.leader ? unitDnd(s.leader, -1, "leader") : undefined} />
@@ -137,18 +152,21 @@ function Side({
               🂠
             </span>
           ))
-        : hand.map((c, i) => (
-            <span
-              className={`handcard${handDraggable ? " draggable" : ""}`}
-              key={i}
-              draggable={handDraggable}
-              onDragStart={handDraggable ? () => dnd?.startHand(c) : undefined}
-              onDragEnd={handDraggable ? () => dnd?.end() : undefined}
-              onClick={() => onCard(c)}
-            >
-              {c}
-            </span>
-          ))}
+        : hand.map((c, i) => {
+            const selected = sel?.kind === "hand" && sel.card === c;
+            return (
+              <span
+                className={`handcard${handSource ? " draggable" : ""}${selected ? " selected" : ""}`}
+                key={i}
+                draggable={handSource}
+                onDragStart={handSource ? () => dnd?.startHand(c) : undefined}
+                onDragEnd={handSource ? () => dnd?.end() : undefined}
+                onClick={(e) => { e.stopPropagation(); if (handSource) dnd?.selectHand(c); else onCard(c); }}
+              >
+                {c}
+              </span>
+            );
+          })}
     </div>
   );
 
@@ -217,14 +235,18 @@ export function PlayBoard({ onCard }: { onCard: (n: string) => void }) {
   const [pending, setPending] = useState<Decision | null>(null);
   const [recording, setRecording] = useState<GameRecording | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
+  const [sel, setSel] = useState<Drag | null>(null); // tap-armed source (touch-friendly)
   const [showAll, setShowAll] = useState(false);
   const askRef = useRef<((k: string) => void) | null>(null);
+  const active = drag ?? sel; // whichever source is currently armed
 
   const ask = useCallback(
     (d: Decision) =>
       new Promise<string>((res) => {
         setPending(d);
         setShowAll(false);
+        setSel(null);
+        setDrag(null);
         askRef.current = (k) => {
           askRef.current = null;
           setPending(null);
@@ -243,9 +265,14 @@ export function PlayBoard({ onCard }: { onCard: (n: string) => void }) {
   // ---- drag-and-drop → option key resolution ----
   // Each gesture is matched against the pending decision's real option keys, so a
   // drop only fires a legal move; anything ambiguous still falls back to the buttons.
+  // Disarm both the drag and the tap-selection.
+  const clear = () => {
+    setDrag(null);
+    setSel(null);
+  };
   const commit = (key: string) => {
     choose(key);
-    setDrag(null);
+    clear();
   };
   const optKeys = () => pending?.options.map((o) => o.key) ?? [];
   const pick = (...cands: string[]) => {
@@ -255,75 +282,83 @@ export function PlayBoard({ onCard }: { onCard: (n: string) => void }) {
   };
 
   // Predicates: is this drop legal right now? Derived from the real option keys so
-  // a target only highlights when dropping there would fire an actual move.
+  // a target only highlights when the armed source could actually act there.
   const attackByName = (name: string) =>
     optKeys().find((x) => {
       const m = x.match(/^attack:(.+)#(-?\d+)>(.+)#(-?\d+)$/);
-      return m && drag?.kind === "unit" && m[1] === drag.name && m[3] === name;
+      return m && active?.kind === "unit" && m[1] === active.name && m[3] === name;
     });
   const canZone = (zone: "active" | "passive") => {
-    if (!drag || drag.kind !== "hand") return false;
+    if (!active || active.kind !== "hand") return false;
     const keys = new Set(optKeys());
-    return keys.has(`play:${drag.card}:${zone}`) || keys.has(`event:${drag.card}`) || keys.has(`onplay:${drag.card}`);
+    return keys.has(`play:${active.card}:${zone}`) || keys.has(`event:${active.card}`) || keys.has(`onplay:${active.card}`);
   };
   const canUnit = (name: string, idx: number) => {
-    if (!drag) return false;
-    if (drag.kind === "hand") {
-      const c = drag.card;
+    if (!active) return false;
+    if (active.kind === "hand") {
+      const c = active.card;
       const keys = new Set(optKeys());
       return keys.has(`equip:${c}>${name}`) || keys.has(`transform:${name}>${c}`) || keys.has(`morph:${name}>${c}`) || keys.has(`onplay:${c}>${name}`);
     }
-    return new Set(optKeys()).has(`attack:${drag.name}#${drag.idx}>${name}#${idx}`) || !!attackByName(name);
+    return new Set(optKeys()).has(`attack:${active.name}#${active.idx}>${name}#${idx}`) || !!attackByName(name);
   };
   const canLeader = () =>
-    !!drag &&
-    drag.kind === "unit" &&
+    !!active &&
+    active.kind === "unit" &&
     optKeys().some((x) => {
       const m = x.match(/^elevate:(.+)#\d+$/);
-      return m && m[1] === drag.name;
+      return m && m[1] === active.name;
     });
 
   const dropZone = (zone: "active" | "passive") => {
-    if (!drag || drag.kind !== "hand") return;
-    const c = drag.card;
+    if (!active || active.kind !== "hand") return;
+    const c = active.card;
     // Only zone-appropriate plays resolve here; targeted cards (heal/tutor) are
     // dropped on their target or chosen via the buttons, never auto-guessed.
-    if (!pick(`play:${c}:${zone}`, `event:${c}`, `onplay:${c}`)) setDrag(null);
+    if (!pick(`play:${c}:${zone}`, `event:${c}`, `onplay:${c}`)) clear();
   };
 
   const dropUnit = (name: string, idx: number) => {
-    if (!drag) return;
-    if (drag.kind === "hand") {
-      const c = drag.card;
-      if (!pick(`equip:${c}>${name}`, `transform:${name}>${c}`, `morph:${name}>${c}`, `onplay:${c}>${name}`)) setDrag(null);
+    if (!active) return;
+    if (active.kind === "hand") {
+      const c = active.card;
+      if (!pick(`equip:${c}>${name}`, `transform:${name}>${c}`, `morph:${name}>${c}`, `onplay:${c}>${name}`)) clear();
     } else {
-      if (pick(`attack:${drag.name}#${drag.idx}>${name}#${idx}`)) return;
+      if (pick(`attack:${active.name}#${active.idx}>${name}#${idx}`)) return;
       // Fallback: match by attacker+target name if the index reconstruction misses.
       const k = attackByName(name);
       if (k) commit(k);
-      else setDrag(null);
+      else clear();
     }
   };
 
   const dropLeader = () => {
-    if (!drag || drag.kind !== "unit") return;
+    if (!active || active.kind !== "unit") return;
     const k = optKeys().find((x) => {
       const m = x.match(/^elevate:(.+)#\d+$/);
-      return m && m[1] === drag.name;
+      return m && m[1] === active.name;
     });
     if (k) commit(k);
-    else setDrag(null);
+    else clear();
   };
+
+  // Tap a source to arm it; tapping the same source again disarms.
+  const selectHand = (card: string) => setSel((s) => (s?.kind === "hand" && s.card === card ? null : { kind: "hand", card }));
+  const selectUnit = (name: string, idx: number) =>
+    setSel((s) => (s?.kind === "unit" && s.name === name && s.idx === idx ? null : { kind: "unit", name, idx }));
 
   const dndFor = (sideName: "A" | "B"): DnD | undefined => {
     if (!pending) return undefined;
     return {
       drag,
+      selected: sel,
       kind: pending.kind,
       isActor: pending.actor === sideName,
       startHand: (card) => setDrag({ kind: "hand", card }),
       startUnit: (name, idx) => setDrag({ kind: "unit", name, idx }),
       end: () => setDrag(null),
+      selectHand,
+      selectUnit,
       dropZone,
       dropUnit,
       dropLeader,
@@ -340,6 +375,7 @@ export function PlayBoard({ onCard }: { onCard: (n: string) => void }) {
     setView(null);
     setPending(null);
     setDrag(null);
+    setSel(null);
     setRunning(true);
     const rec = await playInteractive(DECKS[a](), DECKS[b](), a, b, s, ask, onView, { A: ctrlA, B: ctrlB }, pace);
     rec.meta.startedAt = new Date().toISOString();
@@ -439,6 +475,14 @@ export function PlayBoard({ onCard }: { onCard: (n: string) => void }) {
         <div className="actionbar">
           <span className={`dkind ${pending.kind}`}>{KIND_LABEL[pending.kind]}</span>
           <span className="ahint">{KIND_HINT[pending.kind]}</span>
+          {sel && (
+            <span className="selchip">
+              ● {sel.kind === "hand" ? sel.card : sel.name}
+              <button className="cancelsel" onClick={() => setSel(null)} title="Cancel selection">
+                ✕
+              </button>
+            </span>
+          )}
           <span className="spacer" />
           {terminal && (
             <button className="optbtn" onClick={() => choose(terminal)}>
@@ -490,10 +534,10 @@ export function PlayBoard({ onCard }: { onCard: (n: string) => void }) {
         <p className="note">
           Pick a deck for each side and choose <b>You</b> or <b>AI</b>. By default you play <b>Deck A</b> from the bottom
           of the table against the <b>AI</b> across from you. Every play, transform, attack, and elevation is your call —
-          nothing auto-attacks unless a card forces it. <b>Drag</b> a hand card up onto a zone to play it, onto one of your
-          bodies to equip/transform it, or drag one of your bodies onto an enemy to attack. The phase bar carries “end
-          phase”, and <b>All moves</b> lists every legal action if you’d rather click. The AI’s hand stays hidden. Press{" "}
-          <b>Start game</b>.
+          nothing auto-attacks unless a card forces it. <b>Drag</b> a card to act — or, on touch, <b>tap</b> a source then
+          tap its target: a hand card then a zone to play it (or a body to equip/transform), one of your bodies then an
+          enemy to attack. The phase bar carries “end phase”, and <b>All moves</b> lists every legal action if you’d rather
+          click. The AI’s hand stays hidden. Press <b>Start game</b>.
         </p>
       )}
     </div>
