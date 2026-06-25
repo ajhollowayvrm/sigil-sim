@@ -109,6 +109,7 @@ export const CHAR_ENTRY: Record<string, string> = {
   "Hollowed Stag": "heal_lowest",
   "Channel Adept": "heal_lowest", // Channeled Mending
   "Hierophant Calyx": "heal_lowest", // Anointing Rite (entry heal 10)
+  "Seremin the Sickly": "bring_plague", // the carrier plays Plague from hand/deck on entry (turn-1 enabler)
 };
 
 // Transformation gates keyed by DESTINATION form. Items are NEVER a gate — every

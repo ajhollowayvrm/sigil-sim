@@ -4,7 +4,7 @@
 
 import { comps } from "./elements";
 import { log, logging } from "./log";
-import { boardChars, chars, draw, effMaxhp, immuneItemEvent, isEquipObj, isKaethlaan } from "./stats";
+import { boardChars, chars, draw, effMaxhp, eventSlot, immuneItemEvent, isEquipObj, isKaethlaan } from "./stats";
 import { getCard } from "../data/loadCards";
 import { TUTOR } from "../data/effects-map";
 import type { Player, Unit } from "./types";
@@ -175,6 +175,23 @@ const ENTRY: Record<string, (p: Player, opp: Player, u: Unit) => void> = {
     }
   },
   heal_lowest: (p, _opp, _u) => healLowest(p, 10),
+  // Seremin the Sickly is the carrier: on entry he plays Plague from hand or deck — the
+  // archetype's turn-1 enabler. Bypasses Plague's normal T2 tier-gate (it's a printed entry
+  // effect). Plague is a both-sides field, so it's mirrored onto the opponent (like a war).
+  bring_plague: (p, opp, _u) => {
+    if ((p.plagueField || 0) >= 2) return; // already capped — don't stack further
+    const src: string[] | null = p.hand.includes("Plague") ? p.hand : p.deck.includes("Plague") ? p.deck : null;
+    if (!src) return; // no Plague to bring
+    const z = eventSlot(p);
+    if (!z) return; // no slot for the field card
+    src.splice(src.indexOf("Plague"), 1);
+    p.eventZones["Plague"] = z;
+    p.events.add("Plague");
+    p.pcards.push("Plague");
+    p.plagueField = (p.plagueField || 0) + 1;
+    opp.plagueField = (opp.plagueField || 0) + 1; // mirror onto the opponent (world-state)
+    for (const pl of [p, opp]) for (const x of chars(pl)) x.hp = Math.min(x.hp, effMaxhp(pl, x)); // cap-only clip
+  },
 };
 
 /** Fires on hard-cast, transform, and Metamorphosis (§6). */
