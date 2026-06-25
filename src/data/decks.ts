@@ -51,14 +51,18 @@ export function deckLoyalist(): string[] {
 }
 
 export function deckGoblin(): string[] {
+  // Rebuilt for the 3-copy cap (Ruleset v0.7 Setup). The old list ran Goblin Soldier ×5
+  // and Lor'oak Goblin Grunt ×5 — both now illegal. Diversified with two new named T1
+  // goblins: Crator (a tougher soldier body) and Krakos (Wind archer, hits passive).
+  // No card exceeds 3 copies.
   return D(
     [
       "Goblin Soldier",
       "Goblin Soldier",
       "Goblin Soldier",
-      "Goblin Soldier",
-      "Goblin Soldier",
-      "Goblin Lieutenant",
+      "Crator, Goblin Soldier",
+      "Crator, Goblin Soldier",
+      "Crator, Goblin Soldier",
       "Goblin Lieutenant",
       "Goblin Lieutenant",
       "Goblin Lieutenant",
@@ -67,8 +71,9 @@ export function deckGoblin(): string[] {
       "Lor'oak Goblin Grunt",
       "Lor'oak Goblin Grunt",
       "Lor'oak Goblin Grunt",
-      "Lor'oak Goblin Grunt",
-      "Lor'oak Goblin Grunt",
+      "Krakos, Goblin Archer",
+      "Krakos, Goblin Archer",
+      "Krakos, Goblin Archer",
       "Lor'oak Goblin Commander",
       "Lor'oak Goblin Commander",
       "Bogfang",
@@ -76,11 +81,10 @@ export function deckGoblin(): string[] {
       "Murlifect",
       "Murlifect",
       "Stoneback",
-      "Stoneback",
-      "Sootcrawler",
       "Pyrnit",
+      "Sootcrawler",
     ],
-    ["Goblin War", "Goblin War", "Horde Frenzy", "Stoneback", "Warren Muster", "Warren Muster"],
+    ["Goblin War", "Goblin War", "Horde Frenzy", "Warren Muster", "Warren Muster", "Warren Muster"],
     ["Goblin Shiv", "Goblin Shiv", "Goblin Cleaver", "Warboss' Maul", "Tower Shield", "Buckler", "Buckler", "Twin Daggers"],
   );
 }
