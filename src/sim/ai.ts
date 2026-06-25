@@ -300,6 +300,30 @@ function tryWorldWars(p: Player, opp: Player): void {
   }
 }
 
+/** Plague engine: lay the world-state Plague (a BOTH-SIDES −10 Max HP field, mirrored onto
+ *  both players like a war, with a cap-only clip) and the O'Donner Research Lab (+30 Max HP
+ *  to your O'Donner Research bodies, which offsets Plague for your own subjects).
+ *  PRE-SIM APPROXIMATION — the Plagued-spread, Venner's lock chain, Experiment 2615's
+ *  conditional immunity/regen/scaling, and the Plague-duration transforms are NOT modeled. */
+function tryPlagueEngine(p: Player, opp: Player): void {
+  while (p.hand.includes("Plague") && (p.plagueField || 0) < 2 && eventSlot(p) !== null) {
+    if (!placePersistent(p, "Plague")) break; // tier gate (T2) + slot
+    p.hand.splice(p.hand.indexOf("Plague"), 1);
+    p.plagueField = (p.plagueField || 0) + 1;
+    opp.plagueField = (opp.plagueField || 0) + 1; // world-state: mirror onto the opponent
+    for (const pl of [p, opp]) for (const u of chars(pl)) u.hp = Math.min(u.hp, effMaxhp(pl, u)); // cap-only clip
+    if (logging()) log(`${p.name}: plays Plague`);
+  }
+  if (
+    p.hand.includes("O'Donner Research Lab") &&
+    !p.events.has("O'Donner Research Lab") &&
+    placePersistent(p, "O'Donner Research Lab")
+  ) {
+    p.hand.splice(p.hand.indexOf("O'Donner Research Lab"), 1);
+    if (logging()) log(`${p.name}: plays O'Donner Research Lab`);
+  }
+}
+
 /** Kaethlaan support persistents — value not visible to a one-ply score, so they're
  *  handled here: shield the line under an active war, cheapen the Royal Army climb. */
 function tryKaethlaanSupport(p: Player, opp: Player): void {
@@ -501,6 +525,7 @@ export const greedyPolicy: Policy = {
     //    one-ply score): world Wars, war shells, deliberate captures.
     tryWorldWars(p, opp);
     tryKaethlaanSupport(p, opp);
+    tryPlagueEngine(p, opp); // lay Plague (both-sides field) + the O'Donner Research Lab
     tryTutors(p); // assemble the climb before the transform phase
     trySeeker(p); // order the next draws toward the climb (sets up next turn)
     tryDraw(p); // cycle Reagent Pouch so fresh cards feed the eval loop below

@@ -35,6 +35,7 @@ export const TUTOR: Record<string, TutorSpec> = {
   "Conscription Order": { kind: "affil", affils: ["Royal Army"] }, // Loyalist Royal Army climb
   // Already in canon (Sigil Events.csv) but never wired up. Discard 1 is its printed cost.
   "Call of the Channel": { kind: "affil", affils: ["Divine Channel"], discard: 1 },
+  "Patient Intake": { kind: "affil", affils: ["O'Donner Research", "Plagued"] }, // Plague character tutor
 };
 
 // Engine flags per character (canonical CSV names). Cards absent here have none.
@@ -72,7 +73,21 @@ export const CHAR_FLAGS: Record<string, string[]> = {
   "Kaethlaan Archer": ["hit_passive"],
   "Kaethlaan Sniper": ["hit_passive", "high_atk_bonus"],
   "Thomas the Brave": ["cannot_become_wartorn"], // too brave to be captured
-  "Hierophant of the Channel": ["keeper_channel"], // shortens the Divine Channel chain
+  // ----- Channelian Church (4 named Hierophants replace the retired generic one) -----
+  "Hierophant Vossuth": ["keeper_channel"], // ordained chain-keeper (the institution's version of Hresheeba's innate keeping)
+  "Hierophant Maredd": ["aura_church_def"], // +20 DEF to your Channelian Church
+  "Hierophant Ysmene": ["aura_church_atk", "aura_suppress_natural"], // +10 ATK Church, -10 ATK to natural channelers
+  "St. Faechious": ["aura_faechious"], // unites the wings: +20 ATK to ALL your Divine Channel; overrides Ysmene's suppression
+  // ----- Plague / O'Donner Research (PRE-SIM approximation; Experiment 2615 conditionals,
+  //        Venner's lock chain, Plagued-spread, and Plague-duration transforms are STUBBED) -----
+  "Seremin the Sickly": ["plague_immune"],
+  "Seremin the Plaguebearer": ["plague_immune", "plagued_def_40"],
+  "Patient Zero Seremin": ["plague_immune", "plagued_def_60", "bears_any_tier"],
+  "Experiment 2615": ["plague_immune"],
+  "Experiment 4432, Stage 2": ["plague_immune", "must_attack"],
+  "Experiment 4423A, Stage 2": ["plague_immune", "must_attack"],
+  "Chris O'Donner": ["plague_immune", "aura_odonner"], // +20 ATK to your O'Donner Research
+  "Dr. Mark Poultrain": ["aura_plagued_def"], // +30 DEF to your Plagued
 };
 
 /** Kaethlaan-sphere affiliations — membership for Banner / Close the Gates / Reinforce. */
@@ -93,6 +108,7 @@ export const CHAR_ENTRY: Record<string, string> = {
   "Lumenkit": "heal_lowest",
   "Hollowed Stag": "heal_lowest",
   "Channel Adept": "heal_lowest", // Channeled Mending
+  "Hierophant Calyx": "heal_lowest", // Anointing Rite (entry heal 10)
 };
 
 // Transformation gates keyed by DESTINATION form. Items are NEVER a gate — every
@@ -118,6 +134,13 @@ export const CHAR_PLAY: Record<string, number> = {
   // base form, no permission). Granting a standalone permission — castable as a T3
   // body (turn-3+ via the tier gate). Thematically "bred for war," no presence needed.
   "A Man Bred for War": 0,
+  // Plague bodies with no T1 base (castable-standalone approximation; the Lab+Plague
+  // play-gate is NOT enforced in the sim).
+  "Experiment 4432, Stage 1": 0,
+  "Experiment 4423A, Stage 1": 0,
+  "Dr. Abigail Venner": 0,
+  "Dr. Mark Poultrain": 0,
+  "Chris O'Donner": 1,
 };
 
 // ----- item mechanical effects (the printed Text -> numeric primitive) -----
@@ -240,6 +263,9 @@ export const PERSIST: Set<string> = new Set([
   "Close the Gates", // Kaethlaan units immune to War attrition
   "War College", // your Royal Army characters transform for 1 fewer item (NOTE: no-op — transforms are free in this engine; see audit)
   "The Long Road", // HoT on a Disillusioned/Wandering bearer (heals 10/turn in startOfTurn)
+  "Plague", // world-state -10 Max HP, both sides (mirrored field; see stats.effMaxhp + ai.tryPlagueEngine)
+  "Medical Advancement", // +10 Max HP, your side
+  "O'Donner Research Lab", // +30 Max HP to your O'Donner Research (the Plague engine anchor)
 ]);
 
 // Printed play-conditions on equipment (e.g. Warmonger's Resolve needs a War).

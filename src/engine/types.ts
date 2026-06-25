@@ -138,6 +138,7 @@ export interface Player {
   extraTransforms?: number; // additional transform actions this turn (Opportunity)
   dark_ignore_used: boolean;
   skipCombat?: boolean; // a Truce is suppressing this player's next combat phase
+  plagueField?: number; // count of Plague in play, mirrored onto BOTH players at cast (-10 Max HP each to non-immune)
   rnd: () => number;
 }
 

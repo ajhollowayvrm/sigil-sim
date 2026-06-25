@@ -197,12 +197,12 @@ export function deckDivineChannel(): string[] {
       "Channel Being",
       "Channel Being",
       "Channel Being",
-      "Channel Being",
+      "St. Faechious",
       "Channel Adept",
       "Channel Adept",
       "Channel Adept",
-      "Hierophant of the Channel",
-      "Hierophant of the Channel",
+      "Hierophant Vossuth",
+      "Hierophant Calyx",
       "Touched Child Hresheeba",
       "Touched Child Hresheeba",
       "Touched Child Hresheeba",
@@ -223,12 +223,70 @@ export function deckDivineChannel(): string[] {
   );
 }
 
+export function deckPlague(): string[] {
+  // The 6th archetype: "weaken the enemy and bask in immunity."
+  // PRE-SIM APPROXIMATION — modeled: Plague's both-sides −10 Max HP field, the Lab's +30
+  // Max HP sustain, the Seremin/Poultrain DEF, the Chris O'Donner ATK aura, the Seremin climb.
+  // NOT modeled (so these numbers are a low-confidence FLOOR): Experiment 2615's conditional
+  // +80 DEF / regen / Plagued-scaling, Dr. Venner's no-damage lock chain, the Plagued-spread,
+  // the Plague-duration transform gates, and the Plagued Persons (sustained-by). The canon
+  // deck (Box) also runs Grant Proposal / Quarantine / Containment Ward / Plagued Persons,
+  // and intends Seremin as the elevated Leader (the sim AI crowns by raw stats instead).
+  return D(
+    [
+      "Seremin the Sickly",
+      "Seremin the Sickly",
+      "Seremin the Sickly",
+      "Seremin the Plaguebearer",
+      "Seremin the Plaguebearer",
+      "Seremin the Plaguebearer",
+      "Patient Zero Seremin",
+      "Patient Zero Seremin",
+      "Experiment 2615",
+      "Experiment 4432, Stage 1",
+      "Experiment 4432, Stage 1",
+      "Experiment 4432, Stage 1",
+      "Experiment 4432, Stage 2",
+      "Experiment 4432, Stage 2",
+      "Experiment 4423A, Stage 1",
+      "Experiment 4423A, Stage 1",
+      "Experiment 4423A, Stage 1",
+      "Experiment 4423A, Stage 2",
+      "Experiment 4423A, Stage 2",
+      "Dr. Abigail Venner",
+      "Dr. Abigail Venner",
+      "Dr. Mark Poultrain",
+      "Dr. Mark Poultrain",
+      "Chris O'Donner",
+    ],
+    [
+      "Plague",
+      "Plague",
+      "Plague",
+      "O'Donner Research Lab",
+      "O'Donner Research Lab",
+      "O'Donner Research Lab",
+      "Patient Intake",
+      "Patient Intake",
+      "Patient Intake",
+      "Field Promotion",
+      "Field Promotion",
+      "Sanctuary",
+      "Sanctuary",
+      "Sanctuary",
+      "Bulwark",
+      "Bulwark",
+    ],
+  );
+}
+
 export const DECKS: Record<string, () => string[]> = {
   War: deckWar,
   Loyalist: deckLoyalist,
   Goblin: deckGoblin,
   Wild: deckWild,
   DivineChannel: deckDivineChannel,
+  Plague: deckPlague,
 };
 
 export const DECK_NAMES = Object.keys(DECKS);

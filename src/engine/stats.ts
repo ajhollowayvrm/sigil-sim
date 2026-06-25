@@ -116,6 +116,21 @@ export function effAtk(p: Player, u: Unit): number {
   if (aura && chars(p).some((x) => has(x.t.abil, "aura_mages")) && has(u.t.affils, "Mages Guild")) a += 10;
   if (aura && chars(p).some((x) => has(x.t.abil, "aura_goblin") && x !== u) && has(u.t.affils, "Goblin")) a += 10;
   if (aura && chars(p).some((x) => has(x.t.abil, "aura_channel") && x !== u) && has(u.t.affils, "Divine Channel")) a += 10;
+  // St. Faechious unites the Channel: +20 ATK to ALL your Divine Channel (Church + natural).
+  if (aura && chars(p).some((x) => has(x.t.abil, "aura_faechious")) && has(u.t.affils, "Divine Channel")) a += 20;
+  // Hierophant Ysmene's Hollow Sermon: +10 ATK to your Channelian Church, −10 ATK to your
+  // natural (non-Church) Divine Channel — UNLESS St. Faechious is present (he overrides it).
+  if (aura && chars(p).some((x) => has(x.t.abil, "aura_church_atk")) && has(u.t.affils, "Channelian Church")) a += 10;
+  if (
+    aura &&
+    chars(p).some((x) => has(x.t.abil, "aura_suppress_natural")) &&
+    has(u.t.affils, "Divine Channel") &&
+    !has(u.t.affils, "Channelian Church") &&
+    !chars(p).some((x) => has(x.t.abil, "aura_faechious"))
+  )
+    a -= 10;
+  // Chris O'Donner: +20 ATK to your O'Donner Research.
+  if (aura && chars(p).some((x) => has(x.t.abil, "aura_odonner")) && has(u.t.affils, "O'Donner Research")) a += 20;
   if (has(u.t.abil, "blood_money")) a += 10 * u.kills;
   if (has(u.t.abil, "war_atk") && hasWar(p)) a += 10;
   if (has(u.t.abil, "forged_in_chains") && u.wartorn) a += 20;
@@ -149,6 +164,13 @@ export function effDef(p: Player, u: Unit): number {
   if (has(u.t.abil, "forged_in_chains") && u.wartorn) d += 20;
   if (has(u.t.abil, "my_liege") && chars(p).some((x) => has(x.t.abil, "aura_honathan"))) d += 30; // Captain Arlia's My Liege
   if (has(u.t.abil, "redirect_atherside") && chars(p).some((x) => x.t.name.includes("Arlia"))) d += 10; // At Her Side
+  // Plague-archetype DEF (character abilities, not items/events — so they apply even to a
+  // Protection-of-the-Divine bearer). The Seremins are printed Plagued, so "+DEF while Plagued"
+  // is always-on; Poultrain auras your Plagued board; Maredd armors the Channelian Church.
+  if (has(u.t.abil, "plagued_def_40")) d += 40; // Seremin the Plaguebearer
+  if (has(u.t.abil, "plagued_def_60")) d += 60; // Patient Zero Seremin
+  if (chars(p).some((x) => has(x.t.abil, "aura_plagued_def")) && has(u.t.affils, "Plagued")) d += 30; // Dr. Mark Poultrain
+  if (chars(p).some((x) => has(x.t.abil, "aura_church_def")) && has(u.t.affils, "Channelian Church")) d += 20; // Hierophant Maredd
   // Item/event DEF: Bulwark's tempDef and Crusade's aura are EVENT effects; equip DEF is an
   // ITEM effect. All are blocked for a Protection of The Divine bearer.
   if (!imm) {
@@ -162,6 +184,12 @@ export function effDef(p: Player, u: Unit): number {
 export function effMaxhp(p: Player, u: Unit): number {
   let h = u.t.hp + u.mods.hp + (u.leader ? LB[u.tier] : 0);
   if (!immuneItemEvent(p, u)) for (const e of linkedEquips(p, u)) h += e.eff.maxhp || 0;
+  // World-state / kingdom Max-HP fields. Plague is a BOTH-SIDES −10 carried as a mirrored
+  // count (ai.tryPlagueEngine sets it on both players at cast, like a war); plague_immune
+  // characters (the Seremins, the Experiments' mutated forms, Chris) ignore it.
+  if ((p.plagueField || 0) > 0 && !has(u.t.abil, "plague_immune")) h -= 10 * (p.plagueField || 0);
+  if (p.events.has("Medical Advancement")) h += 10; // Kaethlaan field, your side (Plague's math-opposite)
+  if (p.events.has("O'Donner Research Lab") && has(u.t.affils, "O'Donner Research")) h += 30; // sustains your subjects
   return h;
 }
 
