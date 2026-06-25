@@ -25,6 +25,7 @@ export function canAfford(p: Player, u: Unit, dest: string, cost: TransformCost)
   if (cost.requires_arlia && !p.active.concat(p.passive, p.leader ? [p.leader] : []).some((x) => x.t.name.includes("Arlia")))
     return false;
   if (cost.t3_items && countT3Items(p) < cost.t3_items) return false;
+  if (cost.plague_turns && (u.plaguedTurns || 0) < cost.plague_turns) return false; // Plague-duration climb gate
   return true;
 }
 

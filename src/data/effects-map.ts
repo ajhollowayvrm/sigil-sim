@@ -124,6 +124,10 @@ export const TRANSFORM_COST: Record<string, TransformCost> = {
   "Illyego, the Conqueror": { kills: 3 }, // must have banked 3 kills
   "Second in Command Kael": { requires_arlia: true }, // while you control Arlia
   "The Ascended": { t3_items: 1 }, // needs ≥1 T3 item; ALL T3 items consumed → stats = count×20
+  // Plague-duration: the experiment can only mutate to its mindless Stage 2 after it has been
+  // Plagued through 2 of your turns (plaguedTurns accrues in startOfTurn while Plague is up).
+  "Experiment 4432, Stage 2": { plague_turns: 2 },
+  "Experiment 4423A, Stage 2": { plague_turns: 2 },
 };
 
 // Play-permission for non-T1 standalones: minimum OTHER board characters required
@@ -134,13 +138,21 @@ export const CHAR_PLAY: Record<string, number> = {
   // base form, no permission). Granting a standalone permission — castable as a T3
   // body (turn-3+ via the tier gate). Thematically "bred for war," no presence needed.
   "A Man Bred for War": 0,
-  // Plague bodies with no T1 base (castable-standalone approximation; the Lab+Plague
-  // play-gate is NOT enforced in the sim).
-  "Experiment 4432, Stage 1": 0,
-  "Experiment 4423A, Stage 1": 0,
-  "Dr. Abigail Venner": 0,
-  "Dr. Mark Poultrain": 0,
-  "Chris O'Donner": 1,
+};
+
+// Play-gate for the Plague bodies that have no T1 base: they require the O'Donner Research
+// Lab in play (the facility deploys its subjects) — the doctors additionally require Plague
+// to be in effect (their printed condition). This is the REAL gate, not a free hard-cast; it
+// forces the slow setup (climb Sickly -> Plaguebearer T2 -> lay Lab + Plague -> only THEN
+// deploy experiments/doctors/Chris), instead of dumping big bodies on turn 2.
+export const CHAR_PLAY_GATE: Record<string, { lab?: boolean; plague?: boolean }> = {
+  // Experiments are Plague-spawned mutants — they deploy once Plague is in play (no Lab needed).
+  "Experiment 4432, Stage 1": { plague: true },
+  "Experiment 4423A, Stage 1": { plague: true },
+  // The doctors carry the printed full gate; Chris requires the Lab (his printed condition).
+  "Dr. Abigail Venner": { lab: true, plague: true },
+  "Dr. Mark Poultrain": { lab: true, plague: true },
+  "Chris O'Donner": { lab: true },
 };
 
 // ----- item mechanical effects (the printed Text -> numeric primitive) -----

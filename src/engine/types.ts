@@ -20,6 +20,7 @@ export interface TransformCost {
   taken_prisoner?: boolean; // gated behind an active War (Taken Prisoner road)
   requires_arlia?: boolean; // presence gate (approximated)
   t3_items?: number; // minimum T3 items in hand, ALL consumed on transform (The Ascended)
+  plague_turns?: number; // unit must have been Plagued through N of your turns (Experiment climb)
 }
 
 export type TransformEdge = [dest: string, cost: TransformCost];
@@ -117,6 +118,7 @@ export interface Unit {
   grantedChain?: ChainDef; // a chain granted by a consumed fuel item (Banner of the Realm)
   redirectUsed?: boolean; // Me for You: the once-per-opponent's-turn redirect has fired (reset each turn)
   seekerUsed?: boolean; // Seeker: this turn's top-of-deck reorder has been spent (reset each turn)
+  plaguedTurns?: number; // count of your turns this body has begun while a Plague field is up (climb gate)
 }
 
 export type PersistCard = string; // persistent events live in pcards as their name

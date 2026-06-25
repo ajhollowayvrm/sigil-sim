@@ -11,6 +11,7 @@ import {
   CHAR_ENTRY,
   TRANSFORM_COST,
   CHAR_PLAY,
+  CHAR_PLAY_GATE,
   EQUIP,
   FUEL,
   ONPLAY,
@@ -153,12 +154,18 @@ export function isHardCastable(name: string): boolean {
   const c = CHARS.get(name);
   if (!c || !c.simulatable) return false;
   if (transformOnly.has(name)) return false;
-  return c.tier === 1 || name in CHAR_PLAY;
+  return c.tier === 1 || name in CHAR_PLAY || name in CHAR_PLAY_GATE;
 }
 
 /** Minimum OTHER board characters required to hard-cast a permitted standalone. */
 export function playPermissionMin(name: string): number | undefined {
   return CHAR_PLAY[name];
+}
+
+/** Play-gate (requires the O'Donner Research Lab and/or Plague in play) for a Plague body
+ *  that has no T1 base, or undefined. The real deploy condition — not a free hard-cast. */
+export function playGate(name: string): { lab?: boolean; plague?: boolean } | undefined {
+  return CHAR_PLAY_GATE[name];
 }
 
 export function getCard(name: string): Card | undefined {

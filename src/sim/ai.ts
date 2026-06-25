@@ -20,6 +20,7 @@ import {
   getCard,
   isCharacter,
   isHardCastable,
+  playGate,
   playPermissionMin,
 } from "../data/loadCards";
 import { activeWars, applyTutor, fireEntry, isTutor, seekerReady, seekerReorder, tutorPayable, tutorTargets, warDamageFrom } from "../engine/effects";
@@ -138,6 +139,11 @@ function hardCastCandidates(p: Player, turn: number): Candidate[] {
     if (cc.tier > turn) continue;
     const minOthers = playPermissionMin(card);
     if (minOthers != null && boardChars(p).length < minOthers) continue;
+    const gate = playGate(card); // Plague bodies: require the O'Donner Research Lab (+ Plague for the doctors)
+    if (gate) {
+      if (gate.lab && !p.events.has("O'Donner Research Lab")) continue;
+      if (gate.plague && (p.plagueField || 0) === 0) continue;
+    }
     for (const zone of openZones(p))
       out.push({
         label: `plays ${card} (T${cc.tier}${zone === "passive" ? ", to passive" : ""})`,

@@ -205,6 +205,9 @@ export function startOfTurn(p: Player, opp: Player, turn: number): void {
   p.extraTransforms = 0; // Opportunity's bonus actions don't carry over
   // Regrow heal-over-time.
   for (const u of chars(p)) if (has(u.t.abil, "regrow") && u.hp < effMaxhp(p, u)) u.hp = Math.min(effMaxhp(p, u), u.hp + 10);
+  // Plague-duration: a body accrues a "Plagued turn" at the start of each of your turns while
+  // a Plague field is up — the cost that gates the Experiment / Plagued Person climbs.
+  if ((p.plagueField || 0) > 0) for (const u of chars(p)) u.plaguedTurns = (u.plaguedTurns || 0) + 1;
   // The Long Road: HoT on a Disillusioned/Wandering bearer (modeled as a passive event flag).
   // An EVENT effect — a Protection of The Divine bearer cannot receive it.
   if (p.events.has("The Long Road"))
