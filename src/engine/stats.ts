@@ -80,6 +80,17 @@ export function placePersistent(p: Player, name: string): boolean {
   return true;
 }
 
+/** Destroy a persistent event on a player's board (Dispel / removal). Ends its effect by
+ *  deleting it from events/pcards/zones — the answer the engine previously lacked. A
+ *  mirrored both-sides field (Plague) also lives on the OTHER player; the caller adjusts
+ *  that count and re-clips current HP. */
+export function removePersistent(p: Player, name: string): void {
+  p.events.delete(name);
+  p.pcards = p.pcards.filter((e) => isEquipObj(e) || e !== name);
+  delete p.eventZones[name];
+  delete p.war_turns[name];
+}
+
 export function hasWar(p: Player): boolean {
   return p.events.has("War") || p.events.has("Holy War") || p.events.has("Goblin War");
 }

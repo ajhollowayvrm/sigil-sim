@@ -45,6 +45,7 @@ import {
   moveZone,
   passiveSlotsUsed,
   placePersistent,
+  removePersistent,
 } from "../engine/stats";
 import { applyForge, applyTransform, canAfford, forgeOptions, metamorph } from "../engine/transform";
 import { cloneBoth } from "./clone";
@@ -300,6 +301,37 @@ function tryWorldWars(p: Player, opp: Player): void {
   }
 }
 
+/** Dispel: destroy the opponent's most valuable persistent event — the removal the engine
+ *  lacked (categorical; no card is named, per Mathematical Opposition). Priority: Plague (a
+ *  both-sides field — strip it and the immune walls lose their whole edge), then the
+ *  O'Donner Research Lab, then a War, then the wartime buff-shells. */
+function tryRemoval(p: Player, opp: Player): void {
+  if (!p.hand.includes("Dispel") || !meetsTierGate(p, "Dispel")) return;
+  const priority = [
+    "Plague",
+    "O'Donner Research Lab",
+    "Holy War",
+    "War",
+    "Goblin War",
+    "Hardened Veterans",
+    "Crusade",
+    "Horde Frenzy",
+    "Rally to War",
+    "The Broken March",
+  ];
+  const target = priority.find((n) => opp.events.has(n));
+  if (!target) return;
+  p.hand.splice(p.hand.indexOf("Dispel"), 1);
+  removePersistent(opp, target);
+  if (target === "Plague") {
+    // Plague is mirrored onto both players; destroying it lifts the field on BOTH sides.
+    opp.plagueField = Math.max(0, (opp.plagueField || 0) - 1);
+    p.plagueField = Math.max(0, (p.plagueField || 0) - 1);
+  }
+  for (const pl of [p, opp]) for (const u of chars(pl)) u.hp = Math.min(u.hp, effMaxhp(pl, u)); // cap-only re-clip
+  if (logging()) log(`${p.name}: Dispel — destroys ${opp.name}'s ${target}`);
+}
+
 /** Plague engine: lay the world-state Plague (a BOTH-SIDES −10 Max HP field, mirrored onto
  *  both players like a war, with a cap-only clip) and the O'Donner Research Lab (+30 Max HP
  *  to your O'Donner Research bodies, which offsets Plague for your own subjects).
@@ -525,6 +557,7 @@ export const greedyPolicy: Policy = {
     //    one-ply score): world Wars, war shells, deliberate captures.
     tryWorldWars(p, opp);
     tryKaethlaanSupport(p, opp);
+    tryRemoval(p, opp); // destroy the opponent's key persistent event (Plague / the Lab / a War)
     tryPlagueEngine(p, opp); // lay Plague (both-sides field) + the O'Donner Research Lab
     tryTutors(p); // assemble the climb before the transform phase
     trySeeker(p); // order the next draws toward the climb (sets up next turn)

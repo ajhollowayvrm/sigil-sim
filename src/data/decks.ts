@@ -45,7 +45,7 @@ export function deckLoyalist(): string[] {
       "Soldier Thomas",
       "Thomas the Brave",
     ],
-    ["Instructional Sword", "Instructional Tome", "Kaethlaan Banner", "Twin Daggers", "Vital Charm"],
+    ["Instructional Sword", "Instructional Tome", "Kaethlaan Banner", "Dispel", "Dispel"],
     ["Close the Gates", "Reinforce the Front Lines", "Field Promotion", "Field Promotion", "Conscription Order", "Truce", "Truce", "Sanctuary"],
   );
 }
@@ -85,7 +85,7 @@ export function deckGoblin(): string[] {
       "Sootcrawler",
     ],
     ["Goblin War", "Goblin War", "Horde Frenzy", "Warren Muster", "Warren Muster", "Warren Muster"],
-    ["Goblin Shiv", "Goblin Shiv", "Goblin Cleaver", "Warboss' Maul", "Tower Shield", "Buckler", "Buckler", "Twin Daggers"],
+    ["Goblin Shiv", "Goblin Shiv", "Goblin Cleaver", "Warboss' Maul", "Dispel", "Buckler", "Buckler", "Dispel"],
   );
 }
 
@@ -137,9 +137,9 @@ export function deckWar(): string[] {
     [
       "Whetstone",
       "Berserker's Brand",
-      "Twin Daggers",
+      "Dispel",
       "Back-Alley Blade",
-      "Vital Charm",
+      "Dispel",
     ],
   );
 }
@@ -183,7 +183,7 @@ export function deckWild(): string[] {
       "Metamorphosis",
       "Metamorphosis",
     ],
-    ["Twin Daggers", "Whetstone", "Whetstone", "Call of the Wild", "Call of the Wild"],
+    ["Dispel", "Dispel", "Whetstone", "Call of the Wild", "Call of the Wild"],
   );
 }
 
@@ -219,7 +219,7 @@ export function deckDivineChannel(): string[] {
       "The Ascended",
     ],
     ["Call of the Channel", "Call of the Channel", "Call of the Channel", "Field Promotion", "Field Promotion", "Disillusioned", "Reinforce the Front Lines", "Truce", "Truce", "Sanctuary", "Sanctuary", "Bulwark"],
-    ["Twin Daggers", "Instructional Tome", "Instructional Tome", "Vital Charm", "Relic of the Forsaken"],
+    ["Dispel", "Instructional Tome", "Instructional Tome", "Dispel", "Relic of the Forsaken"],
   );
 }
 
