@@ -553,3 +553,32 @@ any internal change.
 Note: this did NOT solve meta-wide T3 viability (global T3-landing still ~24% — the clock didn't
 change). It traded that broader goal for fixing DC's weakness parity-safely. Meta-wide T3 viability
 still wants the global durability/clock lever + an aggro re-tune (deferred — it's a bigger round).
+
+---
+
+## Round 15 — "The Crown" benchmark deck + the gauntlet (a balancing tool)
+
+Built the strongest deck the gauntlet could find and kept it as a fixed power-ceiling reference.
+
+- **The Crown** (`deckCrown`, in `BENCHMARK_DECKS` — NOT a balanced archetype, EXCLUDED from parity):
+  Royal Army control. Honathan's untargetable-Leader rule (unkillable while you hold a Royal Army
+  body) + the Kael assassin road (Swiftblade -> Shadow -> The King's Blade) to snipe THEIR Leader,
+  + tutors / protection / an anti-Plague package. ~62-64% vs the whole field — beats every deck.
+- **`npm run gauntlet`** (`scripts/gauntlet.ts`): runs each balanced archetype vs each benchmark and
+  ranks the field by resilience. The deck registry now splits `DECKS` (6 balanced, parity) from
+  `BENCHMARK_DECKS` (red-team), with `ALL_DECKS` for the UI/batch; `runMatch` uses `ALL_DECKS`.
+
+### Using it as a balancing tool
+The benchmark is a FIXED strong opponent, so the field's win-rate against it is an absolute
+resilience yardstick (parity only measures the decks relative to EACH OTHER — it can't see a
+meta-wide power gap or a shared exploit). First gauntlet (1000/matchup):
+```
+field avg 36.3% vs Crown   (Crown ~64%)
+Plague 43% · War 43% · Goblin 39% · DivineChannel 32% · Loyalist 31% · Wild 31%
+```
+Reads: every deck is well below 50% vs Crown, so the Honathan-untargetable + assassin combo is
+above the set's intended ceiling (a nerf candidate). Wild/Loyalist have the biggest gaps (the
+walled-out aggro/value decks); Plague resists best (immune bodies). As cards/decks are tuned, track
+each deck's gauntlet number — closing toward ~45-50% means the field can stand up to a strong build;
+a deck that craters flags an exploit to patch. Add more benchmarks (e.g. a combo or aggro ceiling)
+to triangulate.

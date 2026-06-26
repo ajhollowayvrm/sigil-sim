@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { DECK_NAMES } from "../data/decks";
+import { ALL_DECK_NAMES as DECK_NAMES } from "../data/decks";
 import { runMatch, type MatchStats } from "../sim/batch";
 
 const WHY: Record<string, string> = {

@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { DECK_NAMES, DECKS } from "../data/decks";
+import { ALL_DECK_NAMES as DECK_NAMES, ALL_DECKS as DECKS } from "../data/decks";
 import { playInteractive, type Controller, type Decision, type View } from "../sim/interactive";
 import type { Phase } from "../sim/record";
 import type { GameRecording } from "../sim/record";

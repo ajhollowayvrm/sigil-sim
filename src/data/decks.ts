@@ -350,6 +350,77 @@ export function deckPlague(): string[] {
   );
 }
 
+// ---------------------------------------------------------------------------
+// BENCHMARK decks — deliberately power-optimized builds, NOT balanced archetypes.
+// They are a fixed "power ceiling" reference: run the balanced field against them
+// (npm run gauntlet) to measure resilience and surface exploits as you tune. Kept
+// out of the parity round-robin so they don't distort the balance metric.
+// ---------------------------------------------------------------------------
+
+export function deckCrown(): string[] {
+  // "The Crown" — Royal Army control, the strongest deck found in the gauntlet (~62% vs the
+  // whole field, beating every archetype). NOT a fair sample deck; it's a benchmark / red-team
+  // build that exploits two strong pieces working together:
+  //   1. King Honathan's Leader rule — "while you control a Royal Army character, King Honathan
+  //      cannot be attacked." The deck floods cheap Royal Army bodies, so the win condition is
+  //      near-unkillable (the opponent must clear the whole board to even make a Leader-kill).
+  //   2. The Kael ASSASSIN road (Swiftblade -> Shadow -> The King's Blade) snipes the OPPOSING
+  //      Leader past defenders (King's Blade ignores zone restrictions; +20 ATK & draw-on-KO
+  //      while Honathan is in play). So: wall your own Leader, assassinate theirs.
+  // Rounded out with tutors (Conscription Order/Field Promotion), protection (Truce/Sanctuary/
+  // Bulwark/Reinforce), and an anti-Plague package (Dispel x3 + Medical Advancement) for the one
+  // close matchup. This is the "Crown's enforcer" assassin package that Loyalist DROPPED for
+  // thematic fit (R11) — kept here as the balance benchmark it became.
+  return D(
+    [
+      "King Honathan of Kaethlaan",
+      "King Honathan of Kaethlaan",
+      "Kael, Destined Trainee",
+      "Kael, Destined Trainee",
+      "Kael, Destined Trainee",
+      "Swiftblade Kael",
+      "Swiftblade Kael",
+      "Swiftblade Kael",
+      "Kael the Shadow",
+      "Kael the Shadow",
+      "The King's Blade",
+      "Kaethlaan Recruit",
+      "Kaethlaan Recruit",
+      "Kaethlaan Recruit",
+      "Kaethlaan Knight",
+      "Kaethlaan Knight",
+      "Kaethlaan Knight",
+      "Sword of the Realm",
+      "Sword of the Realm",
+      "Strango, Knight Trainer",
+      "Strango, Knight Trainer",
+      "Arlia, Destined Trainee",
+      "Arlia, Destined Trainee",
+      "Squire Arlia",
+      "Captain Arlia of the Royal Army",
+    ],
+    [],
+    [
+      "Conscription Order",
+      "Conscription Order",
+      "Conscription Order",
+      "Field Promotion",
+      "Field Promotion",
+      "Reinforce the Front Lines",
+      "Truce",
+      "Truce",
+      "Sanctuary",
+      "Sanctuary",
+      "Bulwark",
+      "Dispel",
+      "Dispel",
+      "Dispel",
+      "Medical Advancement",
+    ],
+  );
+}
+
+/** The 6 balanced archetypes — the set under balance. */
 export const DECKS: Record<string, () => string[]> = {
   War: deckWar,
   Loyalist: deckLoyalist,
@@ -359,4 +430,14 @@ export const DECKS: Record<string, () => string[]> = {
   Plague: deckPlague,
 };
 
-export const DECK_NAMES = Object.keys(DECKS);
+/** Power-ceiling benchmark / red-team decks — excluded from parity, used by the gauntlet. */
+export const BENCHMARK_DECKS: Record<string, () => string[]> = {
+  Crown: deckCrown,
+};
+
+/** Everything playable (balanced + benchmark) — for watch/batch/testing. */
+export const ALL_DECKS: Record<string, () => string[]> = { ...DECKS, ...BENCHMARK_DECKS };
+
+export const DECK_NAMES = Object.keys(DECKS); // balanced field only (parity uses this)
+export const BENCHMARK_NAMES = Object.keys(BENCHMARK_DECKS);
+export const ALL_DECK_NAMES = Object.keys(ALL_DECKS); // balanced + benchmark (UI pickers, batch)

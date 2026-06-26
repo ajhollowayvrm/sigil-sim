@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { DECK_NAMES, DECKS } from "../data/decks";
+import { ALL_DECK_NAMES as DECK_NAMES, ALL_DECKS as DECKS } from "../data/decks";
 import { recordGame, type Frame, type SideSnap } from "../sim/recorder";
 import { Card, EventToken } from "./Card";
 import { EventsPanel } from "./EventsPanel";

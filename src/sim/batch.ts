@@ -1,7 +1,7 @@
 // Batch runner: runMatch() plays N games of a matchup and aggregates win-rates,
 // end-reason breakdown, and game length. Seeded for reproducibility.
 
-import { DECKS } from "../data/decks";
+import { ALL_DECKS } from "../data/decks";
 import { game } from "../engine/game";
 import { mulberry32 } from "../engine/rng";
 import { policyFor } from "./ai";
@@ -15,8 +15,8 @@ export interface MatchStats {
 }
 
 export function runMatch(nameA: string, nameB: string, n: number, seed: number): MatchStats {
-  const fa = DECKS[nameA];
-  const fb = DECKS[nameB];
+  const fa = ALL_DECKS[nameA];
+  const fb = ALL_DECKS[nameB];
   const polA = policyFor(nameA);
   const polB = policyFor(nameB);
   const wins: Record<string, number> = {};

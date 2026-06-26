@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { allCardInfos, getCardInfo, isCharacter, isItem } from "../data/loadCards";
-import { DECKS, DECK_NAMES } from "../data/decks";
+import { ALL_DECKS as DECKS, ALL_DECK_NAMES as DECK_NAMES } from "../data/decks";
 
 function Coverage() {
   return (
