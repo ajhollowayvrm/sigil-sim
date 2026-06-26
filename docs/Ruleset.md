@@ -273,6 +273,24 @@ Each named character is unique on your board. You cannot have two Arlias in play
 
 All entities in Sigil — Kingdom characters, beasts, tribal creatures, and everything in between — exist on the same tier ladder. Any character — including a goblin commander — can theoretically be designated as a Leader, with the corresponding tier-bonus implications. Niche decks are a feature, not a bug.
 
+### Metamorphosis (v0.8 amendment)
+
+A one-shot **Metamorphosis** event transforms a T1 Wild you control into **any** T2 Wild in your hand — an *any-to-any* morph with no fixed lineage (the destination is not printed as a transform-in). It does **not** use your transformation action, keeps the body's banked kills, and the body's element becomes the new form's. This is how the Wild archetype reaches its six T2 terminals (Embermaw, Craghide, Skirrl, Tidewretch, Hollowed Stag, Gravecreep).
+
+### Fusion — the Apex mechanic (v0.8 amendment)
+
+Fusion is a transformation-adjacent mechanic for the **go-wide** archetypes (Wild's *Primal Fusion*; Goblin's *Pile On*). A Fusion event merges two creatures of its affiliation that you control into one growing predator — the **Apex**:
+
+- **Merge.** One chosen creature becomes the Apex and absorbs the other, gaining its base ATK and HP (a glass cannon — it does **not** gain the absorbed creature's DEF) and its banked kills. The absorbed creature, and any equipment on it, leaves play. The Apex keeps its own form and tier, so a fused T1 Wild can still Metamorphose afterward.
+- **Chainable.** The Apex tracks its **fusion count** — how many creatures it has absorbed. Feed the same Apex with more Fusion cards to grow it.
+- **Escalation.** An Apex that has absorbed **2 or more** may attack the passive zone (reach); **3 or more** may attack the opposing Leader directly, ignoring zone restrictions.
+- **Element effect.** Each fusion also triggers an effect keyed to the **absorbed** creature's element — Fire (damage an enemy), Water (the Apex heals), Earth (the Apex gains DEF, permanently), Wind (gain ATK), Light (heal an ally), Dark (damage the opposing Leader). Hybrid elements fire both components. (See the card text for exact values.)
+- **Cost & timing.** Fusion does **not** use your transformation action; each printed Fusion card costs a card **discard** to fire. This is a deliberately card-hungry combo loop, fed by cheap, weak go-wide bodies and card-draw cantrips.
+
+### The Ascended — item consumption (v0.8 clarification)
+
+The Ascended's printed ability sets its HP/ATK/DEF to **(items discarded during transformation) × 20**, of **any tier**. The transform-in requires *at least one T3 item* only as an **entry gate** — when it transforms, **every** item in your hand (any tier) is consumed and counted. Stat-modifying riders on the consumed items do not apply (you trade them for the ×20); ability-grant riders still apply.
+
 -----
 
 ## Synergies
