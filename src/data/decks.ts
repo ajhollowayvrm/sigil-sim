@@ -420,6 +420,112 @@ export function deckCrown(): string[] {
   );
 }
 
+export function deckVanguard(): string[] {
+  // "Vanguard" — the COUNTER to The Crown (~50% head-to-head) and a top deck itself (~60% vs the
+  // field). Same Royal Army engine as Crown but TEMPO, not control: lighter on the protection/
+  // answer suite, heavier on bodies + reach (Sniper/Archer pick off the backline) + a Whetstone/
+  // Instructional pump, so it out-races the slower control build. A second power-ceiling reference.
+  return D(
+    [
+      "King Honathan of Kaethlaan",
+      "Kael, Destined Trainee",
+      "Kael, Destined Trainee",
+      "Kael, Destined Trainee",
+      "Swiftblade Kael",
+      "Swiftblade Kael",
+      "Swiftblade Kael",
+      "Kael the Shadow",
+      "Kael the Shadow",
+      "The King's Blade",
+      "Kaethlaan Recruit",
+      "Kaethlaan Recruit",
+      "Kaethlaan Recruit",
+      "Kaethlaan Knight",
+      "Kaethlaan Knight",
+      "Kaethlaan Knight",
+      "Sword of the Realm",
+      "Sword of the Realm",
+      "Strango, Knight Trainer",
+      "Strango, Knight Trainer",
+      "Kaethlaan Sniper",
+      "Kaethlaan Archer",
+      "Arlia, Destined Trainee",
+      "Arlia, Destined Trainee",
+      "Squire Arlia",
+      "Captain Arlia of the Royal Army",
+    ],
+    ["Instructional Sword", "Whetstone"],
+    [
+      "Conscription Order",
+      "Conscription Order",
+      "Conscription Order",
+      "Field Promotion",
+      "Field Promotion",
+      "Reinforce the Front Lines",
+      "Sanctuary",
+      "Sanctuary",
+      "Bulwark",
+      "Truce",
+      "Dispel",
+      "Dispel",
+    ],
+  );
+}
+
+export function deckPlaguelord(): string[] {
+  // "Plaguelord" — the strongest NON-Royal-Army build and the best Crown-resister outside the
+  // Vanguard mirror (~45% vs Crown, ~49% vs field). Aggressive Plague: the immune Experiments as
+  // beaters (Crown's swords can't kill them efficiently) + Chris's ATK aura + Poultrain DEF + the
+  // -10 field. A grind-style reference for the gauntlet — and a marker of the non-RA ceiling.
+  return D(
+    [
+      "Seremin the Sickly",
+      "Seremin the Sickly",
+      "Seremin the Sickly",
+      "Seremin the Plaguebearer",
+      "Seremin the Plaguebearer",
+      "Seremin the Plaguebearer",
+      "Patient Zero Seremin",
+      "Patient Zero Seremin",
+      "Experiment 2615",
+      "Experiment 2615",
+      "Experiment 4432, Stage 1",
+      "Experiment 4432, Stage 1",
+      "Experiment 4432, Stage 1",
+      "Experiment 4432, Stage 2",
+      "Experiment 4432, Stage 2",
+      "Experiment 4423A, Stage 1",
+      "Experiment 4423A, Stage 1",
+      "Experiment 4423A, Stage 1",
+      "Experiment 4423A, Stage 2",
+      "Experiment 4423A, Stage 2",
+      "Dr. Mark Poultrain",
+      "Dr. Mark Poultrain",
+      "Chris O'Donner",
+    ],
+    [],
+    [
+      "Plague",
+      "Plague",
+      "Plague",
+      "O'Donner Research Lab",
+      "O'Donner Research Lab",
+      "O'Donner Research Lab",
+      "Patient Intake",
+      "Patient Intake",
+      "Patient Intake",
+      "Field Promotion",
+      "Field Promotion",
+      "Sanctuary",
+      "Truce",
+      "Bulwark",
+      "Dispel",
+      "Dispel",
+      "Dispel",
+    ],
+  );
+}
+
 /** The 6 balanced archetypes — the set under balance. */
 export const DECKS: Record<string, () => string[]> = {
   War: deckWar,
@@ -432,7 +538,9 @@ export const DECKS: Record<string, () => string[]> = {
 
 /** Power-ceiling benchmark / red-team decks — excluded from parity, used by the gauntlet. */
 export const BENCHMARK_DECKS: Record<string, () => string[]> = {
-  Crown: deckCrown,
+  Crown: deckCrown, // Royal Army CONTROL — the apex vs the field
+  Vanguard: deckVanguard, // Royal Army TEMPO — counters Crown, also top-tier
+  Plaguelord: deckPlaguelord, // aggressive Plague — the strongest NON-Royal-Army build (a grind reference)
 };
 
 /** Everything playable (balanced + benchmark) — for watch/batch/testing. */

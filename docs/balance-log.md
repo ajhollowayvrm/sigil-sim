@@ -582,3 +582,32 @@ walled-out aggro/value decks); Plague resists best (immune bodies). As cards/dec
 each deck's gauntlet number — closing toward ~45-50% means the field can stand up to a strong build;
 a deck that craters flags an exploit to patch. Add more benchmarks (e.g. a combo or aggro ceiling)
 to triangulate.
+
+---
+
+## Round 16 — benchmark roster: Vanguard (Crown-counter) + Plaguelord; Royal Army dominance
+
+Asked for a deck to counter The Crown plus "other really good decks." Built and tested candidates
+(Plague control, Goblin blitz, War outlaw, aggressive Plague, Royal Army tempo) against Crown + the
+field. Added two to BENCHMARK_DECKS.
+
+- **Vanguard** — the COUNTER to Crown (~50% head-to-head across seeds) and a top deck (~60% vs the
+  field). Same Royal Army engine, but TEMPO not control: lighter answers, more bodies + reach
+  (Sniper/Archer) + a pump. It out-races the slower control Crown.
+- **Plaguelord** — the strongest NON-Royal-Army build (aggressive immune Experiments + the field).
+  ~45% vs Crown, ~48% vs field — a grind-style reference, NOT a power ceiling.
+
+### The finding: Royal Army is over the ceiling
+Full gauntlet (1000/matchup) — field win-rate vs each benchmark:
+```
+vs Crown      36.3%   (Crown ~64%)   Plague 43 best · Wild/Loyalist 30 worst
+vs Vanguard   39.4%   (Vanguard ~61%) Plague 46 best · Loyalist 34 worst
+vs Plaguelord 51.9%   (Plaguelord ~48%) Plague 56 · Loyalist 45
+```
+BOTH apex decks are Royal Army (Honathan + the Kael assassin road + cheap Royal Army bodies). NO
+non-Royal-Army build tested broke ~52% vs the field — the best non-RA (Plaguelord) sits *below* it.
+So the Royal Army package is above the set's power ceiling: it has the best body-wall (Leader safe
+behind cheap Royal Army flood), the only Leader-snipe (King's Blade, hit_leader), and strong tutors.
+A nerf candidate if you want archetype diversity at the top — likely the King's Blade's unconditional
+hit_leader snipe and/or the cheap-body Leader wall. Plague is consistently the most RESILIENT
+archetype (best field-resister vs all three benchmarks); Wild/Loyalist are the most fragile.
