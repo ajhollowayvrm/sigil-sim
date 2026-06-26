@@ -53,12 +53,21 @@ export function noCharactersLeft(p: Player): boolean {
   return !p.deck.concat(p.hand).some((c) => isCharacter(c));
 }
 
-export function game(dA: string[], dB: string[], rnd: RNG, policy: Policy, recorder?: Recorder): GameResult {
+export function game(
+  dA: string[],
+  dB: string[],
+  rnd: RNG,
+  policy: Policy | [Policy, Policy],
+  recorder?: Recorder,
+): GameResult {
   setLog(recorder ? (s: string) => recorder.log(s) : null);
 
   const A = makePlayer(dA, "A", rnd);
   const B = makePlayer(dB, "B", rnd);
   const players: Player[] = [A, B];
+  // Per-side policies: A may use a different brain than B (deck-specialized AI). A single
+  // Policy is shared by both sides (the common case); a [polA, polB] pair specializes each.
+  const polFor = (i: number): Policy => (Array.isArray(policy) ? policy[i] : policy);
   let active = 0;
 
   const finish = (w: string, turn: number, why: GameResult[2]): GameResult => {
@@ -87,8 +96,9 @@ export function game(dA: string[], dB: string[], rnd: RNG, policy: Policy, recor
     }
     if (p.lose) return finish(opp.name, turn, "deckout");
 
-    policy.mainPhase(p, opp, turn);
-    policy.transformAction(p, opp, turn);
+    const pol = polFor(active);
+    pol.mainPhase(p, opp, turn);
+    pol.transformAction(p, opp, turn);
     combat(p, opp, turn);
 
     if (opp.leader && opp.leader.hp <= 0) return finish(p.name, turn, "leader");
@@ -96,7 +106,7 @@ export function game(dA: string[], dB: string[], rnd: RNG, policy: Policy, recor
     if (opp.leader && opp.leader.hp <= 0) return finish(p.name, turn, "leader");
     if (noCharactersLeft(opp)) return finish(p.name, turn, "wiped");
 
-    if (p.leader === null && turn >= 2) policy.elevate(p, turn);
+    if (p.leader === null && turn >= 2) pol.elevate(p, turn);
     // Optional elevation: you may stay leaderless (no transforms while you do — that's
     // the cost), but you lose if you still have no Leader by the end of turn 5.
     if (turn >= 5 && p.leader === null) return finish(opp.name, turn, "noleader");

@@ -81,14 +81,14 @@ export function WatchBoard({ onCard }: { onCard: (n: string) => void }) {
     const s = lockSeed ? useSeed : Math.floor(Math.random() * 1e9);
     if (!lockSeed) setSeed(s);
     setAuto(false);
-    setFrames(recordGame(DECKS[a](), DECKS[b](), s));
+    setFrames(recordGame(DECKS[a](), DECKS[b](), s, a, b));
     setI(0);
   }
 
   // initial game + whenever decks change
   useEffect(() => {
     setAuto(false);
-    setFrames(recordGame(DECKS[a](), DECKS[b](), lockSeed ? seed : 1));
+    setFrames(recordGame(DECKS[a](), DECKS[b](), lockSeed ? seed : 1, a, b));
     setI(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

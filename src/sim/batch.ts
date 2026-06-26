@@ -4,7 +4,7 @@
 import { DECKS } from "../data/decks";
 import { game } from "../engine/game";
 import { mulberry32 } from "../engine/rng";
-import { greedyPolicy } from "./ai";
+import { policyFor } from "./ai";
 
 export interface MatchStats {
   wins: Record<string, number>;
@@ -17,6 +17,8 @@ export interface MatchStats {
 export function runMatch(nameA: string, nameB: string, n: number, seed: number): MatchStats {
   const fa = DECKS[nameA];
   const fb = DECKS[nameB];
+  const polA = policyFor(nameA);
+  const polB = policyFor(nameB);
   const wins: Record<string, number> = {};
   const ends: Record<string, number> = {};
   let lenSum = 0;
@@ -25,7 +27,9 @@ export function runMatch(nameA: string, nameB: string, n: number, seed: number):
   for (let i = 0; i < n; i++) {
     const rnd = mulberry32((s = (s + 0x9e3779b9) >>> 0));
     const first = i % 2; // alternate who goes first to cancel the first-player edge
-    const [w, length, why] = first === 0 ? game(fa(), fb(), rnd, greedyPolicy) : game(fb(), fa(), rnd, greedyPolicy);
+    // The policy pair follows the seating: side A's brain matches whichever deck is seated A.
+    const [w, length, why] =
+      first === 0 ? game(fa(), fb(), rnd, [polA, polB]) : game(fb(), fa(), rnd, [polB, polA]);
     let key: string;
     if (w === "draw") key = "draw";
     else key = (w === "A") === (first === 0) ? nameA : nameB;

@@ -12,23 +12,42 @@ function D(...parts: string[][]): string[] {
 }
 
 export function deckLoyalist(): string[] {
+  // "Defense of the Kingdom; sustain and continue." Reworked toward an EXCELLENT thematic
+  // fit (was ◐ "slightly diluted"): the deck now wins the way its identity says it should —
+  // THE WALL HOLDS, THEN THE ROYAL ARMY STRIKES AS ONE — instead of by sniping the Leader.
+  //
+  // Out: the Kael ASSASSIN road (Kael the Shadow -> The King's Blade) — a lone tempo
+  //   Leader-sniper that pulled Loyalist toward racing, the opposite of outlasting; also
+  //   Mage Arlia (the caster/Divine-Channel branch) and the Thomas filler line.
+  // In (bodyguard): Kael's LOYAL-DEFENSIVE road — Second in Command Kael ("At Her Side":
+  //   redirect attacks at Arlia onto him, +10/+10 while you control Arlia). Kael stays the
+  //   mix-n-match character (War's outlaw road, Loyalist's bodyguard road) but here he SHIELDS.
+  // Win condition (army chains): the coordinated Royal Army chains — Strango's Drill Formation
+  //   (Chain 2 Royal Army), Honathan's Rally the Realm (sum +20), Captain Arlia's Triangle
+  //   Attack (the elite Kaethlaan-Knights trio, sum +30). The king commands; the army acts as one.
+  // Sustain shell (all engine-modeled): redirect walls (Squire Arlia ×2, 2nd-in-Command Kael),
+  //   heals (Reinforce ×2), Max-HP bookkeeping (Medical Advancement — Plague's math-opposite),
+  //   DEF saves (Bulwark ×2), single-target + board fog (Sanctuary ×2, Truce ×2), Kaethlaan
+  //   war-immunity (Close the Gates). (War College is a no-op and Shield Wall isn't modeled —
+  //   left out rather than faked.)
   return D(
     [
       "King Honathan of Kaethlaan",
+      // Arlia line — the defensive Knight road (redirect + Triangle Attack chain), no Mage branch.
       "Arlia, Destined Trainee",
       "Arlia, Destined Trainee",
-      "Mage Arlia",
+      "Arlia, Destined Trainee",
+      "Squire Arlia",
       "Squire Arlia",
       "Captain Arlia of the Royal Army",
-      // Kael's LOYAL road — lives here, not in War, because The King's Blade's whole
-      // payoff keys off King Honathan (mix-n-match: Kael spans War's outlaw road and
-      // Loyalist's loyal road). Honathan's aura + the riders make Shadow/King's Blade sing.
+      "Captain Arlia of the Royal Army",
+      // Kael's BODYGUARD road (replaces the assassin road): Swiftblade -> Second in Command Kael.
       "Kael, Destined Trainee",
       "Kael, Destined Trainee",
       "Swiftblade Kael",
       "Swiftblade Kael",
-      "Kael the Shadow",
-      "The King's Blade",
+      "Second in Command Kael",
+      // Royal Army soldier wall + the chain bodies.
       "Kaethlaan Recruit",
       "Kaethlaan Recruit",
       "Kaethlaan Knight",
@@ -40,13 +59,23 @@ export function deckLoyalist(): string[] {
       "Strango, Knight Trainer",
       "Kaethlaan Archer",
       "Kaethlaan Sniper",
-      "Thomas, Scared Recruit",
-      "Thomas, Scared Recruit",
-      "Soldier Thomas",
-      "Thomas the Brave",
     ],
-    ["Instructional Sword", "Instructional Tome", "Kaethlaan Banner", "Dispel", "Dispel"],
-    ["Close the Gates", "Reinforce the Front Lines", "Field Promotion", "Field Promotion", "Conscription Order", "Truce", "Truce", "Sanctuary"],
+    ["Kaethlaan Banner", "Dispel", "Dispel"],
+    [
+      "Close the Gates",
+      "Medical Advancement",
+      "Reinforce the Front Lines",
+      "Reinforce the Front Lines",
+      "Bulwark",
+      "Bulwark",
+      "Sanctuary",
+      "Sanctuary",
+      "Truce",
+      "Truce",
+      "Conscription Order",
+      "Conscription Order",
+      "Field Promotion",
+    ],
   );
 }
 
@@ -188,28 +217,44 @@ export function deckWild(): string[] {
 }
 
 export function deckDivineChannel(): string[] {
-  // The Divine Channel archetype: climb Arlia to THE ASCENDED (the capstone whose
-  // stats = T3 items consumed ×20, and whose The Channel chain is an AoE board-wipe),
-  // backed by Channel-body chain enablers (keepers shrink the chain). Slow combo:
-  // Arlia → Mage → Wandering Acolyte (needs Disillusioned) → Ascended (needs T3 items).
+  // The Divine Channel archetype: "amazing potential and wild effects, hard to get it all
+  // out." TWO paths that ENABLE EACH OTHER (not compete) — the consistent CHURCH and the
+  // sky-high ASCENDED:
+  //   - The CHURCH is the win-con / plan B: Channel bodies + Hierophants form the Divine
+  //     Channel chain; keepers (Old Maid Hresheeba, Hierophant Vossuth) shrink it so it fires;
+  //     Maredd armors them; St. Faechious gives ALL Divine Channel +20 ATK & chain-from-any-zone.
+  //   - THE ASCENDED is the ceiling: Arlia → Mage → Acolyte → Ascended, whose stats ARE the
+  //     items it consumes ×20 (ANY tier — engine fix) and whose The Channel chain wipes the
+  //     board (sum ATK ×2 to everyone). St. Faechious's +20 and the keepers also super-charge
+  //     IT — the Church's own engine is what makes the apotheosis land and fire.
+  //   - The glue is a DUAL-PURPOSE ITEM PACKAGE: cheap fuel (Whetstone/Buckler/Grimoire/
+  //     Oathblade/Focus) buffs ordinary clergy climbs OR piles up in hand to feed The Ascended
+  //     (now any tier counts ×20); a few T3 (Relic/Warlord's Spoils) meet its entry gate. Items
+  //     are never dead — they power the Church when the apotheosis doesn't come.
+  // Piloted by a DEDICATED per-deck policy (sim/ai.ts divineChannelPolicy): the generic greedy
+  // AI is too myopic to assemble a 4-deep combo, so DC gets its own brain that deploys/shelters
+  // the Arlia line, sequences Disillusioned + Opportunity, and ascends + fires The Channel on cue.
   return D(
     [
+      // Church core — the consistent win-con AND the Ascended's enablers (keepers shrink The
+      // Channel; St. Faechious +20 ATK to ALL Divine Channel super-charges the apotheosis too).
       "Channel Being",
       "Channel Being",
       "Channel Being",
-      "St. Faechious",
       "Channel Adept",
       "Channel Adept",
       "Channel Adept",
+      "Touched Child Hresheeba",
+      "Touched Child Hresheeba",
+      "Touched Child Hresheeba",
+      "Old Maid Hresheeba",
+      "Old Maid Hresheeba",
+      "Old Maid Hresheeba",
       "Hierophant Vossuth",
+      "Hierophant Maredd",
       "Hierophant Calyx",
-      "Touched Child Hresheeba",
-      "Touched Child Hresheeba",
-      "Touched Child Hresheeba",
-      "Old Maid Hresheeba",
-      "Old Maid Hresheeba",
-      "Old Maid Hresheeba",
-      "Old Maid Hresheeba",
+      "St. Faechious",
+      // The apotheosis line — the ceiling (leaner; the Church carries the other games).
       "Arlia, Destined Trainee",
       "Arlia, Destined Trainee",
       "Mage Arlia",
@@ -218,8 +263,29 @@ export function deckDivineChannel(): string[] {
       "The Wandering Acolyte Arlia",
       "The Ascended",
     ],
-    ["Call of the Channel", "Call of the Channel", "Call of the Channel", "Field Promotion", "Field Promotion", "Disillusioned", "Reinforce the Front Lines", "Truce", "Truce", "Sanctuary", "Sanctuary", "Bulwark"],
-    ["Dispel", "Instructional Tome", "Instructional Tome", "Dispel", "Relic of the Forsaken"],
+    [
+      // Items double as clergy fuel/equip AND Ascended food (any tier ×20). A couple T3 meet
+      // the entry gate; Instructional Tomes equip a clergy body or pile up for the apotheosis.
+      "Relic of the Forsaken",
+      "Relic of the Forsaken",
+      "Instructional Tome",
+      "Instructional Tome",
+      "Dispel",
+      "Dispel",
+    ],
+    [
+      "Call of the Channel",
+      "Call of the Channel",
+      "Call of the Channel",
+      "Field Promotion",
+      "Field Promotion",
+      "Disillusioned",
+      "Disillusioned",
+      "Opportunity",
+      "Truce",
+      "Sanctuary",
+      "Bulwark",
+    ],
   );
 }
 

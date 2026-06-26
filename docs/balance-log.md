@@ -377,3 +377,111 @@ DivineChannel    47.1%    54.5%    53.6%    50.6%       —    51.5%
 Sanctuary 11%, Bulwark 8% — all live, none dead. Control still earns its edge vs rush
 (DivineChannel beats Goblin 53.6 / Wild 50.6). The protection category is now a real
 deckbuilding axis: rush decks run zero, control decks run 3–5.
+
+---
+
+## Round 11 — Loyalist thematic rework ("Defense of the Kingdom; sustain and continue")
+
+A *fit* round, not a tuning round. Loyalist rated ◐ "slightly diluted": it owned the best
+defensive toolkit but won/lost like everyone else (turn-4–5 Leader-kill races; its outlast
+identity only fired vs Wild). The culprit was the Kael ASSASSIN road (Kael the Shadow ->
+The King's Blade) — a lone tempo Leader-sniper pulling the deck toward racing. Goal: make the
+mechanic BE the identity, like War's attrition. The wall holds, then the Royal Army strikes as one.
+
+### Changes (`decks.ts` `deckLoyalist` only — no engine change)
+- **Out:** Kael the Shadow, The King's Blade (assassin road); Mage Arlia (caster/DivineChannel
+  branch); the Thomas filler line; the Instructional equips.
+- **In (bodyguard Kael):** Second in Command Kael — "At Her Side" redirect (already engine-modeled).
+  Kael stays mix-n-match (War's outlaw road / Loyalist's bodyguard road) but here he SHIELDS.
+- **In (army-chain finish):** 2nd Captain Arlia (Triangle Attack), Strango ×2 kept (Drill Formation),
+  Honathan's Rally the Realm — the coordinated Royal Army chains are the win condition.
+- **In (sustain shell, all modeled):** Medical Advancement (+10 Max HP, Plague's math-opposite),
+  Bulwark ×2, 2nd Reinforce, 2nd Sanctuary, 2nd Squire Arlia (redirect wall), Conscription Order ×2.
+- Considered and rejected: War College (no-op — transforms are free here), Shield Wall (unmodeled),
+  Hardened Veterans / Rally to War (war-gated; Loyalist runs no War).
+
+### Result (parity 800×4 = 3200/pairing, 6 decks)
+```
+row vs col      War Loyalist   Goblin     Wild DivineCh   Plague   overall
+War              —     54.7%    51.9%    46.7%    57.4%    51.4%   52.4%
+Loyalist      45.3%       —     48.8%    57.8%    54.3%    42.4%   49.7%
+Goblin        48.1%    51.2%       —     41.2%    50.3%    48.4%   47.8%
+Wild          53.3%    42.2%    58.8%       —     54.7%    49.4%   51.7%
+DivineChannel    42.6%    45.8%    49.7%    45.3%       —     41.4%   45.0%
+Plague        48.6%    57.6%    51.6%    50.6%    58.6%       —    53.4%
+```
+**Loyalist overall 47.8% -> 49.7% (now best-centered deck); AVG LENGTH 5.90 turns.** The fit
+landed where theme predicts: Loyalist now BEATS rush (Wild 57.8%, DivineChannel 54.3%) by
+outlasting — the Wild matchup runs 8.6 turns with **5% ending in Wild decking out** (the wall
+holds; the rush breaks on it). It LOSES to attrition that out-grinds a wall: War 45.3% (races
+faster than the wall sets up) and Plague 42.4% (out-sustains the sustain deck — "weaken + bask
+in immunity" going over the top on the Max-HP axis). Both are thematically *correct* losses.
+The deck's wins now come from its identity, not from a grafted-on assassin. ◐ -> ★.
+
+Round-wide, DivineChannel (45.0%) remains the weak deck (known) and the 6-deck spread is 8.5 —
+driven by DC and Plague, not by this change.
+
+### Investigated: Loyalist 42.4% vs Plague — RESOLVED, no change (the Dispel theory was wrong)
+Suspected the AI was under-prioritizing Dispel (Loyalist's Plague answer). Instrumented a 3000-game
+Loyalist-vs-Plague diagnostic (per-winner end-reasons + Dispel draw-vs-play gap). Findings:
+- **Dispel is used efficiently, not under-prioritized.** `tryRemoval` fires it unconditionally on
+  the first turn {Dispel in hand + a T2+ body + Plague on board} all hold (priority list heads with
+  Plague). Drawn 46.6% (≈ what 2-of-40 predicts), played 22.0%, and "held on Plague but never played"
+  is only **3.0%** (timing noise — it removes Plague mid-main-phase). The 22% ceiling is draw, not AI.
+- **The Plague field is a red herring for this matchup.** Bumping Loyalist to Dispel ×3 raised usage
+  (22%→25%) but moved the matchup the WRONG way (44.8%→43.8%, swapping out a consistency tutor hurt
+  more than extra field-removal helped). The loss is driven by Plague's **immune bodies** (the
+  Experiments/Seremins kill Loyalist's Leader: 1558 of Plague's wins are "leader" at avg turn 6.3),
+  not the −10 Max-HP field.
+- **The matchup is thematically correct and left as-is.** Plague ("weaken the enemy and bask in
+  immunity") is designed to out-grind a defensive/value deck; a 55–45 on-theme loss is healthy.
+  Closing it would require beating immune *bodies* (faster/wider army chains or a tech answer), which
+  risks the on-theme Wild win and isn't warranted. No deck or engine change.
+
+---
+
+## Round 12 — Divine Channel fit + PER-DECK AI policies (architecture)
+
+Goal: make The Ascended apotheosis ("amazing potential, hard to get it all out") actually FIRE.
+It was firing **0%** of games in the sim. Root causes found and fixed, plus a new architecture.
+
+### Genuine fixes (keep regardless — correctness + general)
+1. **Engine: The Ascended consumes ANY-tier items, not just T3** (`transform.ts`). The card reads
+   "items discarded during transformation ×20"; the "1+ T3" is only the entry gate. The model
+   counted T3-only, so the capstone was tiny. Now it eats every item in hand → a 160-stat god whose
+   The Channel wipes for ~320. (TODO(v0.8): "ability-grant riders still apply" not yet modeled.)
+2. **AI bug: `pickDiscard` valued every non-character at a flat 10** (`effects.ts`), so discard-tutors
+   (Call of the Channel) paid their cost with the deck's own combo pieces (Disillusioned, relics).
+   Now items are valued by tier and transform-gates protected; `tryTutors` also won't pay a discard
+   worth more than the fetch. Helps every tutor deck; zero parity regression.
+
+### New architecture: per-deck AI policies (AJ's idea)
+The generic greedy AI is myopic by design (scores one ply out), so it can never pilot a deep combo —
+it can't see The Ascended (printed stats "??" → 0) or its combat-phase board-wipe, and won't shelter
+fragile climbers. So policies are now **per-deck** (the brief always intended swappable policies):
+- `game()` accepts `Policy | [Policy, Policy]` and resolves one per side; `POLICIES` registry +
+  `policyFor(deck)`; `batch.ts` and `recordGame()`/WatchBoard pass each deck's policy. Defaulting all
+  to greedy is **byte-identical parity** (determinism verified).
+- `divineChannelPolicy` delegates everything ordinary to greedy but: pre-attaches Disillusioned to a
+  Mage (unlocking Opportunity, which needs a *lingering* Disillusioned character, and pre-paying the
+  Acolyte gate); forces the one step greedy refuses (Acolyte → The Ascended); shelters the Acolyte
+  before it ascends; fronts the finished god to fire The Channel.
+
+### Result — the combo now fires, but hits a hard ceiling
+With the policy, The Ascended/The Channel go from **0% → ~1%** of games, and when they land it's a
+240–340 board-wipe. But **assembly caps at ~3% (reach Acolyte)** no matter how hard we push (tried:
+relic hoard, dual-purpose items, Disillusioned ×3, Opportunity ×2, aggressive vs minimal climb,
+shelter-all vs shelter-imminent). The wall is structural: a **4-deep transform line at 1 transform/
+turn against a ~6-turn clock**, gated by card-availability (Acolyte ×2 in hand when the Mage is up)
+and climber survival. Pushing the combo costs win-rate — DivineChannel **45.0% → 42.4%** (the
+combo-package slots are weaker than a pure-Church build, and ~1% firing doesn't pay for them).
+Other five decks unchanged (War 53.3 / Loyalist 49.6 / Goblin 48.8 / Wild 52.8 / Plague 53.0).
+
+### Conclusion / open decision
+The per-deck architecture is the right foundation and is in place; the any-tier + discard fixes are
+correct. But **the only route to the intended 15–20% payoff is shortening the canon line** (a shallow
+Church/Channel path to The Ascended, or dropping the Disillusioned gate) — exhaustively demonstrated.
+That was declined earlier in favor of the AI path; the AI path is now proven insufficient on its own.
+Decision pending: (a) shorten the canon line (unlocks the combo, pairs with the work done), or (b)
+accept the combo as a rare-but-spectacular bonus and tune the DC deck back toward a competitive
+Church (~45%). The architecture supports either.

@@ -18,12 +18,14 @@ import {
   EQUIP_REQUIRES_WAR,
   ONPLAY,
   getCard,
+  getItemTier,
   isCharacter,
   isHardCastable,
   playGate,
   playPermissionMin,
 } from "../data/loadCards";
-import { activeWars, applyTutor, fireEntry, isTutor, seekerReady, seekerReorder, tutorPayable, tutorTargets, warDamageFrom } from "../engine/effects";
+import { activeWars, applyTutor, discardWorth, fireEntry, isTutor, seekerReady, seekerReorder, tutorPayable, tutorTargets, warDamageFrom } from "../engine/effects";
+import { TUTOR } from "../data/effects-map";
 import type { Policy } from "../engine/game";
 import { log, logging, suppressLog } from "../engine/log";
 import {
@@ -405,6 +407,14 @@ function tryTutors(p: Player): void {
     );
     const pool = enabling.length ? enabling : targets;
     const pick = pool.reduce((a, b) => (fetchWorth(b) > fetchWorth(a) ? b : a));
+    // Discard-cost tutors (Call of the Channel): never pay with a card worth more than the
+    // fetch — otherwise the AI pitches its own combo pieces (Disillusioned, T3 relics) for a
+    // marginal body. Skip the tutor unless the cheapest legal discard is genuinely spare.
+    const spec = TUTOR[card] as { discard?: number } | undefined;
+    if (spec && spec.discard && !enabling.length) {
+      const fodder = p.hand.filter((c) => c !== card).map(discardWorth).sort((a, b) => a - b)[0] ?? Infinity;
+      if (fodder >= fetchWorth(pick)) continue; // best pitch costs more than we'd gain — hold
+    }
     applyTutor(p, card, pick);
   }
 }
@@ -697,6 +707,132 @@ function routeZone(p: Player, opp: Player, nu: Unit): void {
     moveZone(p, nu, other);
     if (logging()) log(`${p.name}: ${nu.t.name} moves to the ${other} zone`);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Divine Channel specialization — a dedicated brain for the apotheosis combo.
+//
+// The generic greedy AI is myopic by design: it scores the board one ply out, so it
+// never builds The Ascended (whose printed stats are "??" → 0, and whose payoff is a
+// combat-phase board-wipe the static eval can't see) and never shelters the fragile
+// climbers. This policy delegates everything ordinary to greedy (clergy deploy, tutors,
+// protection, combat) but takes over the TRANSFORM step to drive the 4-deep line:
+//   Arlia → Mage Arlia → Wandering Acolyte (needs Disillusioned) → The Ascended (needs a
+//   T3 item; consumes ALL items in hand ×20), then routes the finished god to the front to
+//   fire The Channel. Climbers shelter in the passive zone (untargetable) so they survive.
+// ---------------------------------------------------------------------------
+
+const ACOLYTE = "The Wandering Acolyte Arlia";
+const ASCENSION_RANK = new Map(
+  ["Arlia, Destined Trainee", "Mage Arlia", ACOLYTE, "The Ascended"].map((n, i) => [n, i]),
+);
+
+/** The on-board body whose next affordable transform advances the apotheosis the FURTHEST
+ *  (closest to The Ascended), pursued only while The Ascended is still reachable (in hand or
+ *  deck) so we never climb a dead line. Null if nothing can step up. */
+function bestAscensionStep(p: Player): { u: Unit; dest: string; cost: TransformCost } | null {
+  if (!p.hand.includes("The Ascended") && !p.deck.includes("The Ascended")) return null;
+  let best: { u: Unit; dest: string; cost: TransformCost; rank: number } | null = null;
+  for (const u of boardCharsAndLeader(p)) {
+    const here = ASCENSION_RANK.get(u.t.name);
+    if (here === undefined) continue;
+    for (const [dest, cost] of u.t.upg) {
+      const rank = ASCENSION_RANK.get(dest);
+      if (rank === undefined || rank <= here || !canAfford(p, u, dest, cost)) continue;
+      if (!best || rank > best.rank) best = { u, dest, cost, rank };
+    }
+  }
+  return best;
+}
+
+/** We hold everything needed to ascend within a turn or two: an Acolyte in play, plus The
+ *  Ascended and a T3 item in hand (the entry gate). Only then is it worth protecting the climber. */
+function ascensionImminent(p: Player): boolean {
+  return (
+    p.hand.includes("The Ascended") &&
+    p.hand.some((c) => getItemTier(c) === 3) &&
+    boardCharsAndLeader(p).some((u) => u.t.name === ACOLYTE)
+  );
+}
+
+/** Pre-attach a Disillusioned card to a Mage Arlia as a STATE (rather than letting it be
+ *  consumed only at transform). This unlocks two things greedy never reaches: it makes the body
+ *  a "Disillusioned character" so Opportunity (extra transform) becomes playable, and it pre-pays
+ *  the Acolyte gate so the Mage → Acolyte step is affordable the moment the Acolyte card is held. */
+function prepDisillusion(p: Player): void {
+  if (!p.hand.includes("Disillusioned")) return;
+  const target = boardCharsAndLeader(p).find(
+    (u) =>
+      u.t.name === "Mage Arlia" &&
+      !u.disillusioned &&
+      u.t.upg.some(([d, c]) => c.disillusion && (p.hand.includes(d) || p.deck.includes(d))),
+  );
+  if (!target) return;
+  p.hand.splice(p.hand.indexOf("Disillusioned"), 1);
+  target.disillusioned = true;
+  if (logging()) log(`${p.name}: Disillusioned — ${target.t.name} becomes Disillusioned`);
+}
+
+/** Tuck the Acolyte into the passive zone (untargetable) the turn before it ascends. */
+function shelterAcolyte(p: Player): void {
+  for (const u of boardChars(p)) {
+    if (u.t.name === ACOLYTE && u.zone === "active" && passiveSlotsUsed(p) < 3) {
+      moveZone(p, u, "passive");
+      if (logging()) log(`${p.name}: ${u.t.name} shelters in the passive zone to ascend`);
+    }
+  }
+}
+
+export const divineChannelPolicy: Policy = {
+  mainPhase(p: Player, opp: Player, turn: number): void {
+    prepDisillusion(p); // BEFORE greedy: makes a Disillusioned character so its Opportunity fires
+    greedyPolicy.mainPhase(p, opp, turn);
+    if (ascensionImminent(p)) shelterAcolyte(p);
+  },
+
+  transformAction(p: Player, opp: Player, turn: number): void {
+    if (p.leader === null) return; // no transforms while leaderless (greedy's rule)
+    // Spend the BASE action driving the apotheosis one step (greedy crawls it — clergy climbs
+    // compete, and it flat refuses the final Acolyte → Ascended step whose payoff it can't see).
+    // Hand any EXTRA (Opportunity) actions to greedy so the Church develops in parallel.
+    const extras = p.extraTransforms || 0;
+    p.extraTransforms = 0;
+    const step = bestAscensionStep(p);
+    if (step) {
+      const nu = applyTransform(p, opp, turn, step.u, step.dest, step.cost);
+      if (!nu.leader) {
+        if (has(nu.t.abil, "ascended_variable")) routeZone(p, opp, nu); // ascended → front it
+        else if (nu.t.name === ACOLYTE && ascensionImminent(p) && nu.zone === "active" && passiveSlotsUsed(p) < 3)
+          moveZone(p, nu, "passive");
+      }
+      if (extras > 0) {
+        p.extraTransforms = extras - 1; // greedy does 1 + extraTransforms
+        greedyPolicy.transformAction(p, opp, turn);
+      }
+      return;
+    }
+    p.extraTransforms = extras;
+    greedyPolicy.transformAction(p, opp, turn);
+  },
+
+  elevate(p: Player, turn: number): void {
+    greedyPolicy.elevate(p, turn); // crown the best Church body; the Arlia line climbs alongside
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Per-deck policy registry. Most decks are piloted fine by the generic greedy
+// brain; a deck with a hard-to-play engine (e.g. a deep combo) can register its
+// own specialized Policy here, and batch/watch will route that deck's side to it.
+// ---------------------------------------------------------------------------
+
+export const POLICIES: Record<string, Policy> = {
+  DivineChannel: divineChannelPolicy,
+};
+
+/** The brain for a deck by name — its specialization if registered, else greedy. */
+export function policyFor(deck: string | undefined): Policy {
+  return (deck && POLICIES[deck]) || greedyPolicy;
 }
 
 // re-exported for tests/UI that want to reference the unit shape

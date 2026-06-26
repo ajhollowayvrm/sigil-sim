@@ -6,7 +6,7 @@ import { game } from "../engine/game";
 import { mulberry32 } from "../engine/rng";
 import { effAtk, effDef, effMaxhp, isEquipObj, linkedEquips } from "../engine/stats";
 import type { Player, Unit } from "../engine/types";
-import { greedyPolicy } from "./ai";
+import { policyFor } from "./ai";
 
 export interface UnitSnap {
   name: string;
@@ -127,9 +127,16 @@ export function makeRecorder(): Recorder & { frames: Frame[] } {
   };
 }
 
-/** Convenience: play one recorded game and return its frames. */
-export function recordGame(deckA: string[], deckB: string[], seed: number): Frame[] {
+/** Convenience: play one recorded game and return its frames. Pass the deck NAMES so each
+ *  side is piloted by its registered policy (deck-specialized AI); omit for the greedy brain. */
+export function recordGame(
+  deckA: string[],
+  deckB: string[],
+  seed: number,
+  nameA?: string,
+  nameB?: string,
+): Frame[] {
   const rec = makeRecorder();
-  game(deckA, deckB, mulberry32(seed >>> 0), greedyPolicy, rec);
+  game(deckA, deckB, mulberry32(seed >>> 0), [policyFor(nameA), policyFor(nameB)], rec);
   return rec.frames;
 }
