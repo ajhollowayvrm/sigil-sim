@@ -112,12 +112,14 @@ export function deckGoblin(): string[] {
       "Stoneback",
       "Pyrnit",
       "Sootcrawler",
+      "Goblin Standard-Bearer",
+      "Goblin Standard-Bearer",
     ],
-    // (Pile On — the Goblin fusion — exists in the pool but is NOT run here: fusion fights Goblin's
-    // go-wide payoffs (Captain aura, Horde Frenzy), so it's balance-neutral. Goblin wants a horde
-    // pump instead. See balance-log R19.)
+    // Goblin Standard-Bearer ×2 (in the character block above the items) is the SCALING horde
+    // anthem — +10 ATK/DEF per 3 Goblins, a body not a slot-tax. (Pile On, the Goblin fusion, stays
+    // in the pool but isn't run here — it fights the go-wide payoffs. See balance-log R19.)
     ["Goblin War", "Goblin War", "Horde Frenzy", "Warren Muster", "Warren Muster", "Warren Muster"],
-    ["Goblin Shiv", "Goblin Shiv", "Goblin Cleaver", "Warboss' Maul", "Dispel", "Buckler", "Buckler", "Dispel"],
+    ["Goblin Shiv", "Goblin Cleaver", "Warboss' Maul", "Dispel", "Buckler", "Dispel"],
   );
 }
 

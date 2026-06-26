@@ -61,6 +61,7 @@ export const CHAR_FLAGS: Record<string, string[]> = {
   "Illyego, the Soldier": ["war_child", "no_aura"],
   "Illyego, the Conqueror": ["war_child", "war_atk", "no_aura"],
   "Goblin Captain": ["aura_goblin"],
+  "Goblin Standard-Bearer": ["aura_warband"], // scaling horde anthem: +10 ATK/DEF per 3 Goblins (stats.ts)
   "Krakos, Goblin Archer": ["hit_passive"], // Goblin ranged body — backline reach, like Kaethlaan Archer
   "Old Maid Hresheeba": ["keeper_channel", "aura_channel"], // +10 ATK to your Divine Channel (DC archetype payoff)
   "A Man Bred for War": ["forged_in_chains"],
