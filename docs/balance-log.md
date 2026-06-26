@@ -611,3 +611,42 @@ behind cheap Royal Army flood), the only Leader-snipe (King's Blade, hit_leader)
 A nerf candidate if you want archetype diversity at the top — likely the King's Blade's unconditional
 hit_leader snipe and/or the cheap-body Leader wall. Plague is consistently the most RESILIENT
 archetype (best field-resister vs all three benchmarks); Wild/Loyalist are the most fragile.
+
+---
+
+## Round 17 — WHY Royal Army is so good (ablation study): it's CONSISTENCY, not the exploit
+
+Ran ablations on The Crown (knock out each component, measure win-rate vs the field, 800/matchup,
+two seeds) + instrumented the leader-exposure asymmetry. The result OVERTURNS the R16 hypothesis.
+
+### Ablation — Crown win-rate vs field (base ~61-63%), delta from removing each piece:
+```
+− King's Blade (the snipe)   +1.2   ← removing it HELPS; the snipe is a T4, present only 4.4% of plies
+− whole assassin road        -2.0   ← minor
+− Honathan                   -0.5   ← negligible (untargetable is redundant — proven earlier too)
+− tutors (Conscription/FP)   -6.8 / -7.7  ← BY FAR the biggest drop
+− protection (Truce/Sanc/Bulw) +3.2  ← removing it HELPS (situational dilution)
+− Dispel                     +4.2   ← removing it HELPS most
+Crown-max (tutors+bodies, NO protection/Dispel/assassin)  +2.8 / +3.1 → ~65%  ← the strongest build
+```
+### Mechanism — leader exposure is SYMMETRIC (so it's not a wall):
+```
+Crown's leader exposed to normal attack: 30.5%   |  opponent's: 26.8%   (≈ equal — no wall asymmetry)
+Crown controls a Leader-snipe (King's Blade): 4.4% of plies  |  opponent: 0%   (snipe barely happens)
+```
+
+### Conclusion
+Royal Army is strong because it is the most **CONSISTENT, COHERENT body deck**, full stop. The
+affiliation-locked tutors (**Conscription Order** = fetch any Royal Army character, **Field
+Promotion** = fetch the next form) + a deep pool of cheap, redundant, solid bodies mean it curves
+out a strong board EVERY game and out-tempos less-consistent archetypes in the normal leader race.
+The flashy pieces we suspected — King's Blade's snipe, Honathan's untargetable wall — are
+near-irrelevant (removing them is neutral-to-positive), and the situational suite (protection,
+Dispel) actively DILUTES the curve.
+
+Balance implication (corrects R16): nerfing the King's Blade or Honathan will NOT pull Royal Army
+back — they aren't the source. The real levers are CONSISTENCY and BODY DEPTH: tone down the Royal
+Army tutors (Conscription Order is a no-cost fetch-anything) and/or the redundancy of the cheap body
+pool — OR, better for the set, give the other archetypes comparable consistency tools so they can
+curve out as reliably. (Caveat: the greedy AI may under-value protection/Dispel, inflating how
+"negative" they look — but the consistency result is large and seed-stable.)
