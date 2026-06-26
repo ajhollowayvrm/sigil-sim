@@ -388,6 +388,39 @@ function tryKaethlaanSupport(p: Player, opp: Player): void {
   }
 }
 
+/** The Open Channel: a slot-cost persistent tutor that calls a next-form each turn (startOfTurn).
+ *  Play-condition: control a Divine Channel character — which locks it to the DC deck, so the
+ *  climb-consistency it grants doesn't leak to aggro. Play it early; its value is in the turns. */
+function tryOpenChannel(p: Player): void {
+  if (
+    p.hand.includes("The Open Channel") &&
+    !p.events.has("The Open Channel") &&
+    chars(p).some((u) => u.t.affils.some((a) => a.includes("Divine Channel"))) && // printed play-condition
+    placePersistent(p, "The Open Channel")
+  ) {
+    p.hand.splice(p.hand.indexOf("The Open Channel"), 1);
+    if (logging()) log(`${p.name}: plays The Open Channel`);
+  }
+}
+
+/** Seeping Doubt: a slot-cost persistent that coin-flips a chosen body toward Disillusioned each
+ *  turn. Lay it EARLY (as soon as the tier gate allows) whenever the deck runs a wanderer payoff
+ *  that needs disillusion, so the engine is already ticking when the climber arrives. */
+function trySeepingDoubt(p: Player): void {
+  const wantsDisillusion = ["The Wandering Acolyte Arlia", "The Acolyte Illyego"].some(
+    (f) => p.deck.includes(f) || p.hand.includes(f) || boardChars(p).some((u) => u.t.name === f),
+  );
+  if (
+    p.hand.includes("Seeping Doubt") &&
+    !p.events.has("Seeping Doubt") &&
+    wantsDisillusion &&
+    placePersistent(p, "Seeping Doubt")
+  ) {
+    p.hand.splice(p.hand.indexOf("Seeping Doubt"), 1);
+    if (logging()) log(`${p.name}: plays Seeping Doubt`);
+  }
+}
+
 /** Worth of a card to fetch (characters only — bigger forms first). */
 function fetchWorth(name: string): number {
   const c = getCard(name);
@@ -573,6 +606,8 @@ export const greedyPolicy: Policy = {
     //    one-ply score): world Wars, war shells, deliberate captures.
     tryWorldWars(p, opp);
     tryKaethlaanSupport(p, opp);
+    tryOpenChannel(p); // DC consistency engine (slot-cost persistent tutor)
+    trySeepingDoubt(p); // repeatable coin-flip Disillusioned source (slot-cost persistent)
     tryRemoval(p, opp); // destroy the opponent's key persistent event (Plague / the Lab / a War)
     tryPlagueEngine(p, opp); // lay Plague (both-sides field) + the O'Donner Research Lab
     tryTutors(p); // assemble the climb before the transform phase

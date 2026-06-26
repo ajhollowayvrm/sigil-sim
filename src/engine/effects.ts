@@ -246,6 +246,46 @@ export function startOfTurn(p: Player, opp: Player, turn: number): void {
         u.hp = Math.min(effMaxhp(p, u), u.hp + 10);
         break;
       }
+  // The Open Channel (DC consistency engine): start of your turn, call the next form for your
+  // deepest climber from deck to hand — a repeatable Field Promotion that assembles the apotheosis
+  // line and clergy climbs. Highest-tier-first so it advances the climb toward T3/T4. DC-locked by
+  // the card's play-condition (only a Divine Channel deck controls a DC character to play it).
+  if (p.events.has("The Open Channel")) {
+    const climbers = boardChars(p)
+      .concat(p.leader ? [p.leader] : [])
+      .sort((a, b) => b.tier - a.tier);
+    for (const u of climbers) {
+      let called: string | null = null;
+      for (const [dest] of u.t.upg) {
+        if (p.deck.includes(dest) && !p.hand.includes(dest)) {
+          called = dest;
+          break;
+        }
+      }
+      if (called) {
+        p.deck.splice(p.deck.indexOf(called), 1);
+        p.hand.push(called);
+        if (logging()) log(`${p.name}: The Open Channel — calls ${called} to hand`);
+        break;
+      }
+    }
+  }
+  // Seeping Doubt: a repeatable coin-flip Disillusioned source. Each of your turns, pick a body
+  // that would benefit (one with a disillusion-gated transform it could reach) and flip — heads,
+  // it becomes Disillusioned. Feeds the wanderer/apotheosis line when one-shot Disillusioned is scarce.
+  if (p.events.has("Seeping Doubt")) {
+    const target = boardChars(p).find(
+      (u) => !u.disillusioned && u.t.upg.some(([d, c]) => c.disillusion && (p.hand.includes(d) || p.deck.includes(d))),
+    );
+    if (target) {
+      if (p.rnd() < 0.5) {
+        target.disillusioned = true;
+        if (logging()) log(`${p.name}: Seeping Doubt — the coin falls right; ${target.t.name} becomes Disillusioned`);
+      } else if (logging()) {
+        log(`${p.name}: Seeping Doubt — the coin falls wrong`);
+      }
+    }
+  }
   // World-state war attrition — every war in play (EITHER side) hits active zones on BOTH sides.
   const wars = activeWars([p, opp]);
   if (wars.size) {

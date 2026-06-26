@@ -274,16 +274,20 @@ export function deckDivineChannel(): string[] {
       "Dispel",
     ],
     [
+      // The Open Channel ×2 — the slot-cost persistent tutor (Round 13): a repeatable next-form
+      // fetch that finally lets the deep apotheosis line assemble. DC-locked, so it doesn't leak.
+      "The Open Channel",
+      "The Open Channel",
+      // Seeping Doubt — repeatable coin-flip Disillusioned engine; covers the Acolyte gate the
+      // one-shot Disillusioned cards can't reliably reach. Pairs with The Open Channel (forms).
+      "Seeping Doubt",
       "Call of the Channel",
       "Call of the Channel",
-      "Call of the Channel",
-      "Field Promotion",
       "Field Promotion",
       "Disillusioned",
       "Disillusioned",
       "Opportunity",
       "Truce",
-      "Sanctuary",
       "Bulwark",
     ],
   );

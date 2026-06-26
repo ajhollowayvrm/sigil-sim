@@ -485,3 +485,36 @@ That was declined earlier in favor of the AI path; the AI path is now proven ins
 Decision pending: (a) shorten the canon line (unlocks the combo, pairs with the work done), or (b)
 accept the combo as a rare-but-spectacular bonus and tune the DC deck back toward a competitive
 Church (~45%). The architecture supports either.
+
+---
+
+## Round 13 — Divine Channel consistency cards (The Open Channel + Seeping Doubt)
+
+Two new DC cards toward "make T3 viable," driven by the finding that T3 is gated by drawing the
+right pieces (not the transform-action count). Both are clean and PARITY-ISOLATED — the other five
+decks are byte-identical with them in the pool.
+
+- **The Open Channel** (T1 Persistent Event / The Divine Channel): "Play only while you control a
+  Divine Channel character. At the start of each of your turns, search your deck for a form one of
+  your characters can transform into, add it to hand." A slot-cost persistent tutor (repeatable
+  Field Promotion). The play-condition locks it to DC, so the climb-consistency can't leak to aggro
+  (a free GLOBAL version sent climb decks to 56%+ and broke parity — measured).
+- **Seeping Doubt** (T2 Persistent Event): "At the start of each of your turns, choose a character
+  you control and flip a coin; on heads, it becomes Disillusioned." A repeatable coin-flip
+  Disillusioned source for the wanderer/apotheosis transforms when one-shot Disillusioned is scarce.
+
+### Honest result — clean cards, but they don't move the combo (it's clock-gated)
+Both work mechanically (Open Channel played ~33%, Seeping Doubt ~16%), but DC's apotheosis is
+unchanged (Acolyte ~3%, Ascended ~0.8%) and DC win-rate is flat (~42%, vs ~43% without them — the
+slot costs roughly offset the consistency). The reason is structural: **The Ascended is a ~5-gate
+conjunction** (Mage on board + survives + Acolyte card + Disillusioned + a T3 item + Ascended card,
+all inside a ~6-turn clock). Fixing ONE gate (forms, or disillusion) doesn't compound — the others
+still bind. Seeping Doubt in particular rarely lands a USEFUL hit (~0.3%): disillusion doesn't carry
+through the Arlia→Mage transform, so it must catch the Mage in a ~1-turn window before it dies in
+the active zone.
+
+These are good additions to the card POOL (they texture the archetype and are real deckbuilding
+options), but the standing conclusion holds: **T3 viability and the apotheosis are gated by the
+CLOCK.** Across action-economy, global consistency, DC-locked consistency, and now a disillusion
+engine, the only lever that actually makes T3 land is slowing the game (durability / §5 Leader
+durability) — still the unaddressed root cause.

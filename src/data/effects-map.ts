@@ -279,6 +279,8 @@ export const PERSIST: Set<string> = new Set([
   "Plague", // world-state -10 Max HP, both sides (mirrored field; see stats.effMaxhp + ai.tryPlagueEngine)
   "Medical Advancement", // +10 Max HP, your side
   "O'Donner Research Lab", // +30 Max HP to your O'Donner Research (the Plague engine anchor)
+  "The Open Channel", // DC-locked persistent tutor: start of turn, call a next-form to hand (effects.ts startOfTurn)
+  "Seeping Doubt", // repeatable coin-flip Disillusioned source (effects.ts startOfTurn)
 ]);
 
 // Printed play-conditions on equipment (e.g. Warmonger's Resolve needs a War).
