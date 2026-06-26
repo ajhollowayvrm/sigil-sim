@@ -14,6 +14,14 @@ export function isKaethlaan(u: Unit): boolean {
 
 /** Leader tier bonus (Ruleset: Leader System) — applied to ALL stats by current tier. */
 export const LB: Record<number, number> = { 1: 10, 2: 30, 3: 50, 4: 70 };
+/** Divine-Channel durability (EXPERIMENT — make T3 viable for the deck that needs it, without a
+ *  global clock change). A global Leader-HP bump made T3 land but was inherently anti-aggro
+ *  (slowing the clock helps climb, hurts Wild/Goblin). Scoping the durability to Divine Channel
+ *  CARDS only buffs the weak/fragile deck (DC ~44%) so it survives to reach its T3/T4 — and
+ *  touches no other deck (no DC affiliation elsewhere), so parity for the rest is untouched.
+ *  Applied to the base stats (entry HP in makeUnit + the ceiling in effMaxhp). */
+export const DC_DUR_HP = 25;
+const isDivineChannel = (t: Card): boolean => t.affils.some((a) => a.includes("Divine Channel"));
 
 export function isEquipObj(e: Equip | string): e is Equip {
   return typeof e === "object" && e !== null && "eff" in e;
@@ -193,7 +201,7 @@ export function effDef(p: Player, u: Unit): number {
 }
 
 export function effMaxhp(p: Player, u: Unit): number {
-  let h = u.t.hp + u.mods.hp + (u.leader ? LB[u.tier] : 0);
+  let h = u.t.hp + u.mods.hp + (u.leader ? LB[u.tier] : 0) + (isDivineChannel(u.t) ? DC_DUR_HP : 0);
   if (!immuneItemEvent(p, u)) for (const e of linkedEquips(p, u)) h += e.eff.maxhp || 0;
   // World-state / kingdom Max-HP fields. Plague is a BOTH-SIDES −10 carried as a mirrored
   // count (ai.tryPlagueEngine sets it on both players at cast, like a war); plague_immune
@@ -237,11 +245,12 @@ export function canEquip(item: string, bearer: Unit): boolean {
 // ----- entity constructors / mutations -----
 
 export function makeUnit(t: Card, turn: number): Unit {
+  const dur = isDivineChannel(t) ? DC_DUR_HP : 0; // DC durability is a base-stat buff (enters filled)
   return {
     t,
     tier: t.tier,
-    maxhp: t.hp,
-    hp: t.hp,
+    maxhp: t.hp + dur,
+    hp: t.hp + dur,
     kills: 0,
     wartorn: false,
     leader: false,

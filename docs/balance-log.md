@@ -518,3 +518,38 @@ options), but the standing conclusion holds: **T3 viability and the apotheosis a
 CLOCK.** Across action-economy, global consistency, DC-locked consistency, and now a disillusion
 engine, the only lever that actually makes T3 land is slowing the game (durability / §5 Leader
 durability) — still the unaddressed root cause.
+
+---
+
+## Round 14 — Divine Channel durability (parity via the weak deck, not the clock)
+
+Pursuing "make T3 viable," a global Leader-HP bump DID slow the clock and raise T3-landing
+(22%->29% at +30) — but it was inherently ANTI-AGGRO (slower games let climb decks reach payoffs;
+Wild fell 54%->43%). The fix (AJ's call): scope the durability to DIVINE CHANNEL CARDS ONLY.
+
+### Change (`engine/stats.ts`)
+- `DC_DUR_HP = 25`: every Divine-Channel-affiliated character enters with +25 Max HP, applied to the
+  base stats (entry HP in `makeUnit` + the ceiling in `effMaxhp`, so it fills rather than capping).
+  `isDivineChannel` keys off the "Divine Channel" affiliation — exclusive to the DC clergy + The
+  Ascended, so NO other deck is touched. (The shared Arlia apotheosis line isn't DC-affiliated, so it
+  stays as-is; this buffs DC's consistent Church plan-B, the bulk of its wins.)
+
+### Result (parity 800x4 = 3200/pairing)
+```
+row vs col      War Loyalist   Goblin     Wild DivineCh   Plague   overall
+War              —     54.7%    51.9%    46.7%    55.5%    51.4%   52.0%
+Loyalist      45.3%       —     48.8%    57.8%    49.9%    42.4%   48.8%
+Goblin        48.1%    51.2%       —     41.2%    47.3%    48.4%   47.2%
+Wild          53.3%    42.2%    58.8%       —     48.8%    49.4%   50.5%
+DivineChannel    44.5%    50.1%    52.8%    51.2%       —     44.2%   48.6%
+Plague        48.6%    57.6%    51.6%    50.6%    55.8%       —    52.9%
+```
+**DivineChannel 44.2% -> 48.6%; SPREAD 11.1 -> 5.6 (tightest of the project); AVG LENGTH 5.96 (the
+global clock is UNCHANGED — no anti-aggro shift).** Every deck now sits 47-53%. Sweep showed DC
+plateaus ~48.6% by +25 (more HP doesn't help — DC's residual gap is matchup/combo, not fragility),
+so +25 is the efficient value. The other decks moved only by facing a tougher DC (healthy), not by
+any internal change.
+
+Note: this did NOT solve meta-wide T3 viability (global T3-landing still ~24% — the clock didn't
+change). It traded that broader goal for fixing DC's weakness parity-safely. Meta-wide T3 viability
+still wants the global durability/clock lever + an aggro re-tune (deferred — it's a bigger round).
