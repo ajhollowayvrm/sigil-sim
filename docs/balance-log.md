@@ -650,3 +650,35 @@ Army tutors (Conscription Order is a no-cost fetch-anything) and/or the redundan
 pool — OR, better for the set, give the other archetypes comparable consistency tools so they can
 curve out as reliably. (Caveat: the greedy AI may under-value protection/Dispel, inflating how
 "negative" they look — but the consistency result is large and seed-stable.)
+
+---
+
+## Round 18 — test: give every archetype a Crown-quality affiliated tutor
+
+Followed R17 (Royal Army wins on consistency) by giving each balanced deck a Crown-level tutor
+package (3x its affiliated character-tutor + 2x Field Promotion, cutting only fodder items/protection,
+never bodies or engine events). Win-rate vs field · vs Crown, base -> boosted, two seeds:
+```
+Loyalist       +3.8 field · +3.3/+2.0 vs Crown   <- big winner
+DivineChannel  +1.6/+1.8  · +1.5/+2.5            <- modest winner
+War            +0.3/+0.5  · ~0                   already consistent (War Effort x2 + FP x2)
+Wild           ~0         · ~0                   no help
+Goblin         -0.6/-0.7  · ~0                   no help
+Plague          0         ·  0                   already runs the package (Patient Intake x3 + FP x2)
+```
+### Finding: a tutor's value = consistency × the QUALITY of what it fetches
+The hypothesis is only partly right. Tutors help proportional to the body pool behind them:
+- Loyalist gains most because Conscription Order fetches the SAME deep, strong, interchangeable
+  Royal Army pool that makes Crown great.
+- Plague gains nothing because it ALREADY runs Crown-level consistency — which is exactly why it's
+  the most resilient archetype (validates R17).
+- Goblin/Wild gain nothing because their tutors fetch WEAK/narrow pools; their problem is body
+  quality, not consistency. More tutoring just finds more mediocre bodies.
+
+So Royal Army's edge isn't the tutor alone — it's the tutor sitting on a deep pool of cheap,
+interchangeable, perfectly-good bodies. Path to competing: consistency AND a quality pool.
+
+### Actionable
+- Loyalist: a clean buff (+1 Conscription Order + a Field Promotion) lifts it ~48% -> ~52%, no new
+  cards — closes a real gap.
+- Goblin / Wild: need BODY power, not tutors.
