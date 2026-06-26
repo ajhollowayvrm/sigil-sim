@@ -2,7 +2,7 @@
 // take is a policy decision (sim/ai.ts); this module only applies a chosen one.
 // Pure — no React/DOM.
 
-import { EQUIP, FUEL, getCard, getItemTier, itemAnyTier, itemBearerInclude, itemUpgrades, T2ITEMS } from "../data/loadCards";
+import { EQUIP, FUEL, getCard, getItemTier, isItem, itemAnyTier, itemBearerInclude, itemUpgrades, T2ITEMS } from "../data/loadCards";
 import { FUEL_GRANTED_CHAIN } from "../data/effects-map";
 import { fireEntry } from "./effects";
 import { log, logging } from "./log";
@@ -67,14 +67,18 @@ export function applyTransform(p: Player, opp: Player, turn: number, u: Unit, de
     else p.hand.splice(p.hand.indexOf("Disillusioned"), 1);
   }
   p.hand.splice(p.hand.indexOf(dest), 1);
-  // The Ascended: its stats ARE the number of T3 items consumed ×20 (item stat riders
-  // do not apply). Consume every T3 item in hand; that count drives HP/ATK/DEF.
+  // The Ascended: its stats ARE the number of items discarded during transformation ×20 —
+  // ANY tier (the "1+ T3" is only the entry gate, enforced in canAfford). Stat-modifying
+  // riders on the consumed items do NOT apply (you trade the item's printed buff for the
+  // ×20). Consume every item in hand; that count drives HP/ATK/DEF.
+  // (TODO(v0.8): "ability-grant riders still apply" — e.g. an item that grants a keyword/chain
+  //  should pass it to The Ascended; not yet modeled. Stat fix is the load-bearing part.)
   // Otherwise, optional accelerator: spend up to 2 spare fuel items to enter buffed.
   let buff: { atk: number; deff: number; hp: number };
   if (has(getCard(dest)!.abil, "ascended_variable")) {
     let n = 0;
     for (let i = 0; i < p.hand.length; ) {
-      if (getItemTier(p.hand[i]) === 3) {
+      if (isItem(p.hand[i])) {
         p.hand.splice(i, 1);
         n++;
       } else i++;

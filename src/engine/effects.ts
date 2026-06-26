@@ -5,7 +5,7 @@
 import { comps } from "./elements";
 import { log, logging } from "./log";
 import { boardChars, chars, draw, effMaxhp, eventSlot, immuneItemEvent, isEquipObj, isKaethlaan } from "./stats";
-import { getCard } from "../data/loadCards";
+import { getCard, getItemTier, isItem } from "../data/loadCards";
 import { TUTOR } from "../data/effects-map";
 import type { Player, Unit } from "./types";
 
@@ -73,15 +73,28 @@ export function tutorPayable(p: Player, name: string): boolean {
   return true;
 }
 
-/** Deterministically pick the least valuable card in hand to discard as a tutor cost:
- *  junk (events/items, value 10) before bodies, lowest stats first, name as the
- *  tiebreak so same seed ⇒ same discard. */
+/** Consumable transform-gate events: cheap to draw but combo-critical (a body needs them
+ *  to climb), so they must NOT be treated as junk discard fodder. */
+const GATE_EVENTS = new Set(["Disillusioned", "Taken Prisoner", "Opportunity", "Metamorphosis"]);
+
+/** Worth of a card as discard fodder — higher = keep, lower = pitch first. Bodies by
+ *  tier+stats; items by tier (T3 relics/fuel are premium — e.g. The Ascended eats them);
+ *  consumable transform-gates protected; ordinary one-shot events are the cheapest pitch. */
+export function discardWorth(name: string): number {
+  const c = getCard(name);
+  if (c && c.simulatable) return c.tier * 100 + c.atk + c.hp + c.deff;
+  if (GATE_EVENTS.has(name)) return 200; // combo gate — never the first thing pitched
+  if (isItem(name)) return 60 + getItemTier(name) * 40; // T1 item 100 … T3 relic 180
+  return 15; // ordinary event (protection, heal, war) — the cheapest discard
+}
+
+/** Deterministically pick the least valuable card in hand to discard as a tutor cost,
+ *  name as the tiebreak so same seed ⇒ same discard. */
 function pickDiscard(p: Player): string | null {
   let best: string | null = null;
   let bestVal = Infinity;
   for (const cardName of p.hand) {
-    const c = getCard(cardName);
-    const val = c && c.simulatable ? c.tier * 100 + c.atk + c.hp + c.deff : 10;
+    const val = discardWorth(cardName);
     if (val < bestVal || (val === bestVal && best !== null && cardName < best)) {
       bestVal = val;
       best = cardName;
