@@ -704,3 +704,11 @@ Tuning: ×3 → Wild 57.8% (overshot), ×2 → 56.2%, **×1 → 53.5%** (kept). 
 a clear, identity-true buff — it finally gives the low-ceiling rush a ceiling. SPREAD 5.6 → 6.7.
 Side effect: Wild now beats Goblin ~62% (the go-wide mirror) — Goblin (46.8%) is now the weakest and
 wants its own body payoff next.
+
+### Goblin fusion (Pile On) — tested, balance-neutral; fusion is Wild-specific
+Generalized the fusion AI (FUSION_CARDS map) and added **Pile On** (Goblin-locked twin of Primal
+Fusion) to the pool. But ×2 in the Goblin deck barely moved it (46.8% -> 46.3%): fusion FIGHTS
+Goblin's existing go-wide payoffs (Goblin Captain's aura + Horde Frenzy both reward a WIDE board,
+which fusing shrinks). Wild benefited because it had NO payoff and needed a ceiling. So Pile On stays
+in the pool as a themed option, but the Goblin SAMPLE deck reverts to baseline — Goblin's real fix is
+a horde PUMP (rewards staying wide), not fusion.

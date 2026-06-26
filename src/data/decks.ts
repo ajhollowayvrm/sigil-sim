@@ -113,6 +113,9 @@ export function deckGoblin(): string[] {
       "Pyrnit",
       "Sootcrawler",
     ],
+    // (Pile On — the Goblin fusion — exists in the pool but is NOT run here: fusion fights Goblin's
+    // go-wide payoffs (Captain aura, Horde Frenzy), so it's balance-neutral. Goblin wants a horde
+    // pump instead. See balance-log R19.)
     ["Goblin War", "Goblin War", "Horde Frenzy", "Warren Muster", "Warren Muster", "Warren Muster"],
     ["Goblin Shiv", "Goblin Shiv", "Goblin Cleaver", "Warboss' Maul", "Dispel", "Buckler", "Buckler", "Dispel"],
   );

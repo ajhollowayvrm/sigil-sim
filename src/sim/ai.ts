@@ -473,18 +473,24 @@ function tryDraw(p: Player): void {
   }
 }
 
-/** Primal Fusion (Wild go-wide payoff): merge two Wild bodies into one bigger threat + draw. Only
- *  when we control 3+ Wilds, so fusing keeps the board wide while it cashes spare chaff into a
- *  body that can punch through DEF — and the draw refills toward the next wave. */
+/** Fusion cards (go-wide body payoff), each affiliation-locked: card name -> the affiliation it
+ *  may merge. Merge two of that affiliation into one bigger threat + draw — but only when we
+ *  control 3+ of them, so the board stays wide while we cash spare chaff into a DEF-punching body. */
+const FUSION_CARDS: Record<string, string> = {
+  "Primal Fusion": "Wild",
+  "Pile On": "Goblin",
+};
 function tryFusion(p: Player): void {
-  while (p.hand.includes("Primal Fusion")) {
-    const wilds = boardChars(p).filter((u) => has(u.t.affils, "Wild"));
-    if (wilds.length < 3) return;
-    wilds.sort((a, b) => effAtk(p, b) + b.hp - (effAtk(p, a) + a.hp));
-    p.hand.splice(p.hand.indexOf("Primal Fusion"), 1);
-    fuse(p, wilds[0], wilds[1]); // strongest absorbs the runner-up
-    draw(p);
-    if (logging()) log(`${p.name}: Primal Fusion — draws a card`);
+  for (const [card, affil] of Object.entries(FUSION_CARDS)) {
+    while (p.hand.includes(card)) {
+      const bodies = boardChars(p).filter((u) => has(u.t.affils, affil));
+      if (bodies.length < 3) break;
+      bodies.sort((a, b) => effAtk(p, b) + b.hp - (effAtk(p, a) + a.hp));
+      p.hand.splice(p.hand.indexOf(card), 1);
+      fuse(p, bodies[0], bodies[1]); // strongest absorbs the runner-up
+      draw(p);
+      if (logging()) log(`${p.name}: ${card} — draws a card`);
+    }
   }
 }
 
