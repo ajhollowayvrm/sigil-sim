@@ -16,7 +16,7 @@
 import { beats, comps, darkVsLight } from "./elements";
 import { cleanup } from "./effects";
 import { log, logging } from "./log";
-import { canAttack, chars, effAtk, effDef, linkedEquips } from "./stats";
+import { canAttack, chars, effAtk, effDef, leaderUntargetable, linkedEquips } from "./stats";
 import type { Player, Unit } from "./types";
 
 const has = (arr: string[], x: string) => arr.includes(x);
@@ -182,8 +182,10 @@ export function reachable(u: Unit, opp: Player, holyWar = false): Unit[] {
   let ts = opp.active.slice();
   if (has(u.t.abil, "hit_passive")) ts = ts.concat(opp.passive);
   const explicitLeader = has(u.t.abil, "hit_leader") && opp.leader;
-  // The Leader is otherwise only exposed when this attacker has nothing else to hit.
-  const leaderOpen = opp.leader && ts.length === 0 && !has(opp.leader.t.abil, "leader_protect_royal");
+  // The Leader is otherwise only exposed when this attacker has nothing else to hit — UNLESS the
+  // Leader is Honathan with two Kaethlaan Knights guarding him (then untargetable; clear the
+  // knights to make him mortal). hit_leader attackers (King's Blade) still bypass below.
+  const leaderOpen = opp.leader && ts.length === 0 && !leaderUntargetable(opp);
   if (explicitLeader) ts.push(opp.leader!);
   else if (leaderOpen) ts = [opp.leader!];
   // Sanctuary: a shielded body cannot be attacked. Sanctified Blade: a Dark attacker can't

@@ -109,6 +109,15 @@ export function linkedEquips(p: Player, u: Unit): Equip[] {
 
 const has = (arr: string[], x: string) => arr.includes(x);
 
+/** King Honathan's Leader rule, AS PRINTED: "while you control a Royal Army character, King
+ *  Honathan cannot be attacked." A guard on the board (active/passive) keeps him untargetable;
+ *  clear every Royal Army body and he becomes mortal. (The engine previously ignored the
+ *  condition entirely — this restores the printed conditional.) */
+export function leaderUntargetable(p: Player): boolean {
+  if (!p.leader || !has(p.leader.t.abil, "leader_protect_royal")) return false;
+  return boardChars(p).some((u) => has(u.t.affils, "Royal Army"));
+}
+
 /** Protection of The Divine: the bearer "cannot be affected by item or event effects,
  *  whether friendly or hostile." We read that as: NO equipment-stat contribution, NO
  *  persistent-event aura (Rally/Crusade/Horde/Kaethlaan Banner), NO war attrition, and
