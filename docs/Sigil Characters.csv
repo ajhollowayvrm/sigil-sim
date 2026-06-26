@@ -19,7 +19,7 @@ The Silent,Water,4,Y,60,90,10,"Wandering, Faithless, Destined",The Worthy Oppone
 "Mourning Widower, Kael",Water,3,Y,TBD,TBD,TBD,"Forsaken, Destined",TBD,TBD,"Kael, Arlia's Husband (when Arlia, Kael's Wife dies)",N,,,,,,"With his wife dead, Kael has sworn to avenge her. He fights with abandon as he has nothing left to lose.",Love road; terminal dead-end
 Second in Command Kael,Water,2,Y,50,30,20,"Royal Army, Destined",At Her Side,"While you control Arlia, you may redirect attacks declared at Arlia to Second in Command Kael, and Second in Command Kael has +10 ATK and +10 DEF.","Swiftblade Kael, while you control Arlia at T3 or higher (Arlia is not consumed)",N,,,,,,Arlia's second and confidant. He is loyal to a fault and refuses to consider disobedience.,Subordinate-road T2 terminal. Presence-gated transform — no paired-transform rule needed. Bodyguard-redirect echoes Squire Arlia's Me for You.
 King Honathan of Kaethlaan,Light,4,Y,90,40,50,"Royal Army, Kaethlaan Knights, King's Court (Kaethlaan)",The Crown's Command,"Play requirement: you control at least two other Kaethlaan characters. While King Honathan is in play, your King's Court (Kaethlaan) characters have +10 ATK. Leader rule: while you control a Royal Army character, King Honathan cannot be attacked.",,Y,Rally the Realm,2-3,Royal Army,Deal damage equal to the sum of all ATK +20.,,Forty years he has kept the hearth lit. Pray you never learn what it cost him.,First non-Arlia character. Standalone T4 capstone (no transform-in). Affiliations and ability key off Royal Army; also a Kaethlaan Knight and head of the King's Court. Activates Captain Arlia's My Liege.
-Thestral,Dark,1,Y,20,20,0,Wild,,,,N,,,,,,Only those who have seen death can see them coming.,Single-form wild creature; cheap Dark body for filler/opposition and Light-vs-Dark testing.
+Thestral,Dark,1,Y,10,10,0,Wild,,,,N,,,,,,Only those who have seen death can see them coming.,Single-form wild creature; cheap Dark body for filler/opposition and Light-vs-Dark testing.
 Lor'oak Goblin Grunt,Earth,1,N,30,20,10,Goblin,,,,N,,,,,,Numbers were always Lor'oak's only plan.,Base form of the T2-terminal tribal line; cheap fast play. Upgrade path printed on the Commander.
 Lor'oak Goblin Commander,Earth,2,Y,40,30,10,Goblin,,,Lor'oak Goblin Grunt,Y,Rush,2,Goblin,Deal damage equal to the sum of all ATK vs target's DEF.,Active zone only.,Forward. Always forward. There are always more.,T2 terminal; canonical low-tier chain example from Combat & Effects. Validates creatures-as-Leaders and lowest-tier chains.
 "Illyego, the Orphan",Dark,1,N,30,20,10,Faithless,War Child,Illyego may attack even while War-Torn.,,N,,,,,,He does not remember a year without a war in it.,"Common side-character line; attack-through-War-Torn is his identity. Needs an involuntary War-Torn source to matter (Holy War coin-flip capture)."
@@ -29,18 +29,18 @@ Lor'oak Goblin Commander,Earth,2,Y,40,30,10,Goblin,,,Lor'oak Goblin Grunt,Y,Rush
 Goblin Soldier,Earth,1,N,20,20,10,Goblin,,,,N,,,,,,One of many. That is the point.,Common Goblin body; generic rank line (not Lor'oak). Base of Soldier -> Lieutenant -> Captain.
 Goblin Lieutenant,Earth,2,N,40,30,10,Goblin,,,Goblin Soldier,N,,,,,,Promoted by surviving.,Mid-rank generic Goblin.
 Goblin Captain,Earth,3,Y,50,40,20,Goblin,Command,"While Goblin Captain is in play, your other Goblin characters have +10 ATK.",Goblin Lieutenant,N,,,,,,He counts heads before a battle and after. The numbers rarely match.,Terminal generic-Goblin commander; aura only (chains stay special to the Lor'oak line).
-Barangrang,Wind,1,Y,20,10,10,Wild,,,,N,,,,,,Gone before you finish blinking.,Common Wild creature; single-form T1 terminal.
-Murlifect,Earth,1,Y,20,20,10,Wild,Regrow,"At the start of your turn, Murlifect heals 10.",,N,,,,,,Take a piece; it grows two back.,Common Wild creature; sticky regen body.
-Cinderpel,Fire,1,Y,20,20,0,Wild,,,,N,,,,,,A coal that learned to run.,Common Wild creature.
-Tidewhisk,Water,1,Y,20,10,10,Wild,,,,N,,,,,,It laughs in a language of bubbles.,Common Wild creature.
-Glimmermoth,Light,1,Y,10,10,20,Wild,,,,N,,,,,,Drawn to every lantern; burned by none.,Common Wild creature; cheap defensive body.
-Bogfang,Earth,1,Y,30,20,0,Wild,,,,N,,,,,,The swamp grew teeth.,Common Wild creature; aggressive.
-Sootcrawler,Dark,1,Y,20,20,0,Wild,,,,N,,,,,,It lives where the fire has been.,Common Wild creature.
-Pyrnit,Fire,1,Y,10,30,0,Wild,,,,N,,,,,,"Small, furious, briefly.",Common Wild creature; glass-cannon.
-Frostnip,Water,1,Y,20,10,10,Wild,,,,N,,,,,,A cold little nip in the dark.,Common Wild creature.
-Galewing,Wind,1,Y,30,20,10,Wild,,,,N,,,,,,It rides the storm it makes.,Common Wild creature.
-Stoneback,Earth,1,Y,30,10,20,Wild,,,,N,,,,,,Patience with a shell.,Common Wild creature; cheap wall.
-Lumenkit,Light,1,Y,20,10,10,Wild,Warmth,"When Lumenkit enters play, heal one of your characters 10.",,N,,,,,,A small warmth that follows you home.,Common Wild creature; tiny support.
+Barangrang,Wind,1,Y,10,0,10,Wild,,,,N,,,,,,Gone before you finish blinking.,Common Wild creature; single-form T1 terminal.
+Murlifect,Earth,1,Y,10,10,10,Wild,Regrow,"At the start of your turn, Murlifect heals 10.",,N,,,,,,Take a piece; it grows two back.,Common Wild creature; sticky regen body.
+Cinderpel,Fire,1,Y,10,10,0,Wild,,,,N,,,,,,A coal that learned to run.,Common Wild creature.
+Tidewhisk,Water,1,Y,10,0,10,Wild,,,,N,,,,,,It laughs in a language of bubbles.,Common Wild creature.
+Glimmermoth,Light,1,Y,10,0,20,Wild,,,,N,,,,,,Drawn to every lantern; burned by none.,Common Wild creature; cheap defensive body.
+Bogfang,Earth,1,Y,20,10,0,Wild,,,,N,,,,,,The swamp grew teeth.,Common Wild creature; aggressive.
+Sootcrawler,Dark,1,Y,10,10,0,Wild,,,,N,,,,,,It lives where the fire has been.,Common Wild creature.
+Pyrnit,Fire,1,Y,10,20,0,Wild,,,,N,,,,,,"Small, furious, briefly.",Common Wild creature; glass-cannon.
+Frostnip,Water,1,Y,10,0,10,Wild,,,,N,,,,,,A cold little nip in the dark.,Common Wild creature.
+Galewing,Wind,1,Y,20,10,10,Wild,,,,N,,,,,,It rides the storm it makes.,Common Wild creature.
+Stoneback,Earth,1,Y,20,0,20,Wild,,,,N,,,,,,Patience with a shell.,Common Wild creature; cheap wall.
+Lumenkit,Light,1,Y,10,0,10,Wild,Warmth,"When Lumenkit enters play, heal one of your characters 10.",,N,,,,,,A small warmth that follows you home.,Common Wild creature; tiny support.
 "Touched Child Hresheeba",Light,1,N,30,20,10,Kaethlaan,,,,N,,,,,,A child who answers questions no one asked aloud.,Base of Hresheeba's 2-tier line (kept short so the enabler lands fast). Upgrades to Old Maid Hresheeba.
 "Old Maid Hresheeba",Light,2,Y,50,30,20,Divine Channel,Keeper of the Channel,"While Old Maid Hresheeba is in play, your Divine Channel chains may be initiated with one fewer participant (minimum 1), and your Divine Channel characters have +10 ATK.",Touched Child Hresheeba,N,,,,,,She has kept the door so long she has forgotten which side she is on.,"2-tier terminal enabler (fast to deploy). Second Divine Channel body and reduces Divine Channel chain size by 1, so The Channel can assemble (or fire solo). Fetchable by Call of the Channel. Fixes assembly, not The Ascended's arrival."
 Channel Being,Light,1,N,30,30,10,Divine Channel,,,,N,,,,,,Not a person. A doorway that learned to stand up.,"Generic Divine Channel body (run multiples) to assemble The Channel chain. Single-form T1; spared by Holy War (Light)."

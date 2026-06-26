@@ -180,8 +180,11 @@ function defenderValue(opp: Player, t: Unit): number {
  *  Exported so the interactive play tool can show a human their legal targets. */
 export function reachable(u: Unit, opp: Player, holyWar = false): Unit[] {
   let ts = opp.active.slice();
-  if (has(u.t.abil, "hit_passive")) ts = ts.concat(opp.passive);
-  const explicitLeader = has(u.t.abil, "hit_leader") && opp.leader;
+  // Apex escalation: a body that has absorbed 2+ via Fusion gains reach (hits the passive zone);
+  // 3+ lets it strike the opposing Leader directly (like a hit_leader attacker).
+  const fz = u.fusions ?? 0;
+  if (has(u.t.abil, "hit_passive") || fz >= 2) ts = ts.concat(opp.passive);
+  const explicitLeader = (has(u.t.abil, "hit_leader") || fz >= 3) && opp.leader;
   // The Leader is otherwise only exposed when this attacker has nothing else to hit — UNLESS the
   // Leader is Honathan with two Kaethlaan Knights guarding him (then untargetable; clear the
   // knights to make him mortal). hit_leader attackers (King's Blade) still bypass below.

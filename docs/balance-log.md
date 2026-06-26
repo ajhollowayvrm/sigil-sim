@@ -723,3 +723,26 @@ toward its own count, not a slot tax. Result: **Goblin 44.9% -> 50.0%** (vs ~46.
 vs Wild 34% -> 40%, **SPREAD 9.3 -> 6.0; Goblin now centered at 50%**. The buff grows with the horde and rewards going wide (the
 +DEF gives the fragile swarm survivability); kill the Bearer to drop it. (Wild still ~53.5% — a touch
 high from Primal Fusion; can dial its gate to 4+ if desired.)
+
+---
+
+## Round 20 — Wild "Apex" fusion (chainable, element effects, escalation) + base-stat nerf
+
+Reworked Fusion from a stat-calculator into a deep mechanic ("multiple fusions, multiple effects").
+- **Engine** (`transform.ts fuse` + `Unit.fusions` + `combat.ts`): a fused body is an APEX that tracks
+  how many it has absorbed. At ×2 it gains reach (hits the passive zone); at ×3 it can strike the
+  opposing Leader directly. Each fusion also fires an ELEMENT effect keyed to the ABSORBED creature:
+  Fire 10 dmg / Water heal 20 / Earth +20 DEF / Wind draw / Light heal an ally 20 / Dark 10 to the
+  enemy Leader.
+- **Cost + identity** (per AJ — "more fusion cards but make them cost something; like a Yu-Gi-Oh Link
+  deck"): Primal Fusion ×3, each DISCARDS a card to fire. ALL T1 Wilds nerfed (-10 HP / -10 ATK) into
+  cheap fusion FUEL — flood and churn.
+
+### Result (parity 700×3): Wild 52.9%, SPREAD 5.2 (tight). The discard cost gated ×3 (was 58% uncosted).
+### BUT the chain rarely happens (the open problem)
+Instrumented 400 Wild games: max Apex size was ×0 in 51% of games, ×1 in 46%, **×2 in only 3%, ×3 in
+0%**. So the escalation (reach/Leader-strike) and multi-element chains almost never fire — it's a
+×1-fusion engine in practice. Causes: the greedy AI + the body nerf (0-ATK fuel it under-deploys) +
+the discard cost + no draw engine mean Wild lacks the cards/bodies to fuse repeatedly. To realize the
+Link-combo vision, Wild needs a card-advantage / body-flood "extender" package (get tons out fast) so
+it can actually chain — TODO, a balance-sensitive add.

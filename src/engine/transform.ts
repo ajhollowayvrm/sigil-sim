@@ -4,9 +4,10 @@
 
 import { EQUIP, FUEL, getCard, getItemTier, isItem, itemAnyTier, itemBearerInclude, itemUpgrades, T2ITEMS } from "../data/loadCards";
 import { FUEL_GRANTED_CHAIN } from "../data/effects-map";
-import { fireEntry } from "./effects";
+import { cleanup, fireEntry } from "./effects";
+import { comps } from "./elements";
 import { log, logging } from "./log";
-import { effMaxhp, isEquipObj, isKaethlaan, LB, linkedEquips, makeUnit } from "./stats";
+import { chars, draw, effMaxhp, isEquipObj, isKaethlaan, LB, linkedEquips, makeUnit } from "./stats";
 import type { Equip, ItemCost, Player, TransformCost, Unit } from "./types";
 
 const has = (arr: string[], x: string) => arr.includes(x);
@@ -191,16 +192,18 @@ export function metamorph(p: Player, opp: Player, turn: number, src: Unit, dest:
   return nu;
 }
 
-/** Fusion (Wild go-wide payoff): merge `consume` into `keep` — keep gains the other's BASE stats
- *  (its template + its own accumulated mods, not conditional auras), its current HP, and its banked
- *  kills; the consumed body (and its equipment) leaves play. `keep` retains its form/tier, so a
- *  fused T1 Wild can still Metamorphose later. Does not use the transformation action. */
-export function fuse(p: Player, keep: Unit, consume: Unit): void {
+/** Fusion (the Apex mechanic): merge `consume` into `keep`. The keeper (the Apex) gains the other's
+ *  BASE stats (template + its own mods, not auras), current HP, and kills; the consumed body (+ its
+ *  equipment) leaves play. The Apex's fusion COUNT grows — at 2 it gains reach (hits the passive
+ *  zone), at 3 it can strike the opposing Leader (combat.ts reads `fusions`). Each fusion also fires
+ *  an ELEMENT EFFECT keyed to the ABSORBED creature's element. Does not use the transform action. */
+export function fuse(p: Player, opp: Player, keep: Unit, consume: Unit): void {
   keep.mods.atk += consume.t.atk + consume.mods.atk;
   keep.mods.deff += consume.t.deff + consume.mods.deff;
   keep.mods.hp += consume.t.hp + consume.mods.hp;
   keep.hp += Math.max(0, consume.hp);
   keep.kills += consume.kills;
+  keep.fusions = (keep.fusions || 0) + 1;
   for (const lst of [p.active, p.passive]) {
     const i = lst.indexOf(consume);
     if (i >= 0) {
@@ -212,5 +215,27 @@ export function fuse(p: Player, keep: Unit, consume: Unit): void {
     const e = p.pcards[i];
     if (isEquipObj(e) && e.link === consume) p.pcards.splice(i, 1);
   }
-  if (logging()) log(`${p.name}: Fusion — ${consume.t.name} merges into ${keep.t.name}`);
+  if (logging()) log(`${p.name}: Fusion — ${consume.t.name} (${consume.t.elem}) merges into ${keep.t.name} [×${keep.fusions}]`);
+  // Element effect — what the absorbed beast does as it merges (hybrids fire both components).
+  const el = comps(consume.t.elem);
+  if (el.includes("Fire")) {
+    // a last fire-breath: 10 to the weakest opposing active creature
+    const t = opp.active.slice().sort((a, b) => a.hp - b.hp)[0];
+    if (t) {
+      t.hp -= 10;
+      if (logging()) log(`  🔥 Fusion (Fire) — 10 damage to ${t.t.name}`);
+    }
+  }
+  if (el.includes("Water")) keep.hp = Math.min(effMaxhp(p, keep), keep.hp + 20); // regenerate
+  if (el.includes("Earth")) keep.mods.deff += 20; // harden (permanent)
+  if (el.includes("Wind")) draw(p); // the pack scatters and regroups — an extra card
+  if (el.includes("Light")) {
+    const ally = chars(p)
+      .filter((c) => c.hp < effMaxhp(p, c))
+      .sort((a, b) => a.hp / effMaxhp(p, a) - b.hp / effMaxhp(p, b))[0];
+    if (ally) ally.hp = Math.min(effMaxhp(p, ally), ally.hp + 20);
+  }
+  if (el.includes("Dark") && opp.leader) opp.leader.hp -= 10; // drains the life it can reach
+  cleanup(opp); // remove anything the Fire/Dark burst killed
+  // (No base draw — fusing is a real tempo cost, 2 bodies into 1; only a Wind absorption refills.)
 }

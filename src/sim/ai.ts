@@ -480,16 +480,24 @@ const FUSION_CARDS: Record<string, string> = {
   "Primal Fusion": "Wild",
   "Pile On": "Goblin",
 };
-function tryFusion(p: Player): void {
+function tryFusion(p: Player, opp: Player): void {
   for (const [card, affil] of Object.entries(FUSION_CARDS)) {
     while (p.hand.includes(card)) {
       const bodies = boardChars(p).filter((u) => has(u.t.affils, affil));
       if (bodies.length < 2) break;
-      bodies.sort((a, b) => effAtk(p, b) + b.hp - (effAtk(p, a) + a.hp));
-      p.hand.splice(p.hand.indexOf(card), 1);
-      fuse(p, bodies[0], bodies[1]); // strongest absorbs the runner-up
-      draw(p);
-      if (logging()) log(`${p.name}: ${card} — draws a card`);
+      p.hand.splice(p.hand.indexOf(card), 1); // tentatively play the fusion card
+      // COST: discard a card (the cheapest non-fusion card). If nothing to pitch, abort the fusion.
+      const fodder = p.hand.filter((c) => !(c in FUSION_CARDS)).sort((a, b) => discardWorth(a) - discardWorth(b))[0];
+      if (fodder === undefined) {
+        p.hand.push(card);
+        break;
+      }
+      p.hand.splice(p.hand.indexOf(fodder), 1);
+      if (logging()) log(`${p.name}: ${card} — discards ${fodder}`);
+      // Build ONE Apex: the most-fused (then strongest) body absorbs the runner-up, so repeated
+      // fusions stack onto the same growing predator and climb its reach/leader-strike thresholds.
+      bodies.sort((a, b) => (b.fusions ?? 0) - (a.fusions ?? 0) || effAtk(p, b) + b.hp - (effAtk(p, a) + a.hp));
+      fuse(p, opp, bodies[0], bodies[1]); // the Apex absorbs the runner-up (+ element effect)
     }
   }
 }
@@ -668,7 +676,7 @@ export const greedyPolicy: Policy = {
     // 3) After everything is on the table, duck war-doomed bodies into shelter, and
     //    call a Truce if we're being overrun (buy a turn toward our late-game payoff).
     shelterWarDoomed(p, opp);
-    tryFusion(p); // Wild: cash spare bodies into a bigger fused threat (+ draw)
+    tryFusion(p, opp); // Wild: build an Apex (stats + element effect + reach/leader escalation)
     tryDisillusion(p); // set up a wanderer body before the transform phase
     tryOpportunity(p); // bank a bonus transform action if it'll be used
     tryProtect(p, opp, turn); // surgical: shield a key threatened body first

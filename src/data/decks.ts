@@ -216,8 +216,10 @@ export function deckWild(): string[] {
       "Metamorphosis",
       "Metamorphosis",
     ],
-    // Primal Fusion ×1 — the go-wide PAYOFF: merge spare bodies into a threat that punches DEF + draw.
-    ["Primal Fusion", "Whetstone", "Dispel", "Dispel", "Call of the Wild", "Call of the Wild"],
+    // Primal Fusion ×3 — the APEX engine (each costs a DISCARD): chain fusions onto one predator to
+    // stack stats + element effects and climb reach (2) / Leader-strike (3). T1 Wilds are cheap fuel
+    // you flood and churn — a fusion-combo deck (discard to fuse fast).
+    ["Primal Fusion", "Primal Fusion", "Primal Fusion", "Dispel", "Call of the Wild", "Call of the Wild"],
   );
 }
 

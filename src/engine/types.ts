@@ -119,6 +119,7 @@ export interface Unit {
   redirectUsed?: boolean; // Me for You: the once-per-opponent's-turn redirect has fired (reset each turn)
   seekerUsed?: boolean; // Seeker: this turn's top-of-deck reorder has been spent (reset each turn)
   plaguedTurns?: number; // count of your turns this body has begun while a Plague field is up (climb gate)
+  fusions?: number; // Apex: creatures this body has absorbed via Fusion (grants reach at 2, leader-strike at 3)
 }
 
 export type PersistCard = string; // persistent events live in pcards as their name
