@@ -887,13 +887,44 @@ export const divineChannelPolicy: Policy = {
 };
 
 // ---------------------------------------------------------------------------
-// Per-deck policy registry. Most decks are piloted fine by the generic greedy
-// brain; a deck with a hard-to-play engine (e.g. a deep combo) can register its
-// own specialized Policy here, and batch/watch will route that deck's side to it.
+// Per-deck pilots. EVERY deck gets its own named Policy object, so each opponent is an
+// individually-addressable, individually-tunable AI (batch/watch/play all route a deck's side to
+// its pilot via policyFor). The shared core is the greedy brain, which is deck-AWARE — it carries
+// handlers for every archetype's tools (wars, Plague engine, Goblin anthem, Wild fusion, Royal
+// Army tutors, Metamorphosis…) and uses whichever fit the deck it holds, so it already plays each
+// deck's gameplan at ceiling (the Wild study confirmed a bespoke pilot played identically). A deck
+// whose payoff a one-ply eval can't see overrides the phases it needs — DivineChannel drives its
+// apotheosis combo today; the others are the hooks where that per-deck tuning will live.
 // ---------------------------------------------------------------------------
 
+/** A pilot that runs the greedy brain except for any phases you override. */
+function pilot(overrides: Partial<Policy> = {}): Policy {
+  return {
+    mainPhase: overrides.mainPhase ?? ((p, opp, t) => greedyPolicy.mainPhase(p, opp, t)),
+    transformAction: overrides.transformAction ?? ((p, opp, t) => greedyPolicy.transformAction(p, opp, t)),
+    elevate: overrides.elevate ?? ((p, t) => greedyPolicy.elevate(p, t)),
+  };
+}
+
+export const warPolicy = pilot();
+export const loyalistPolicy = pilot();
+export const goblinPolicy = pilot();
+export const wildPolicy = pilot();
+export const plaguePolicy = pilot();
+export const crownPolicy = pilot();
+export const vanguardPolicy = pilot();
+export const plaguelordPolicy = pilot();
+
 export const POLICIES: Record<string, Policy> = {
-  DivineChannel: divineChannelPolicy,
+  War: warPolicy,
+  Loyalist: loyalistPolicy,
+  Goblin: goblinPolicy,
+  Wild: wildPolicy,
+  DivineChannel: divineChannelPolicy, // the one hand-tuned specialist (drives the apotheosis)
+  Plague: plaguePolicy,
+  Crown: crownPolicy,
+  Vanguard: vanguardPolicy,
+  Plaguelord: plaguelordPolicy,
 };
 
 /** The brain for a deck by name — its specialization if registered, else greedy. */
