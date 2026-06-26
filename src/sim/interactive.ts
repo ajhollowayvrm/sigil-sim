@@ -12,7 +12,7 @@ import { combat, doChains, reachable, strike } from "../engine/combat";
 import { setLog } from "../engine/log";
 import { mulberry32 } from "../engine/rng";
 import { boardChars, canAttack, crownLeader, draw } from "../engine/stats";
-import { greedyPolicy } from "./ai";
+import { policyFor } from "./ai";
 import { snap, type SideSnap } from "./recorder";
 import { mainActions, type GameAction } from "./actions";
 import type { GameRecording, MoveRecord, Phase } from "./record";
@@ -67,6 +67,10 @@ export async function playInteractive(
   const A = makePlayer(deckA, "A", rnd);
   const B = makePlayer(deckB, "B", rnd);
   const players: [Player, Player] = [A, B];
+  // An AI-controlled side pilots its OWN deck — its registered specialist (e.g. the Divine
+  // Channel combo pilot) if it has one, else the generic greedy brain. So "play vs the X deck"
+  // faces an AI that actually plays X, not a generic opponent.
+  const aiPolicies = { A: policyFor(deckAName), B: policyFor(deckBName) };
 
   const lines: string[] = [];
   setLog((s) => lines.push(s));
@@ -168,8 +172,8 @@ export async function playInteractive(
       chosen.apply(p, opp, turn);
       }
     else {
-      greedyPolicy.mainPhase(p, opp, turn);
-      greedyPolicy.transformAction(p, opp, turn);
+      aiPolicies[p.name as "A" | "B"].mainPhase(p, opp, turn);
+      aiPolicies[p.name as "A" | "B"].transformAction(p, opp, turn);
       onView(view(turn, p.name as "A" | "B"));
       if (pace) await pace();
     }
@@ -233,7 +237,7 @@ export async function playInteractive(
     // you LOSE if you still have no Leader by the end of turn 5.
     if (p.leader === null && turn >= 2) {
       if (!human) {
-        greedyPolicy.elevate(p, turn);
+        aiPolicies[p.name as "A" | "B"].elevate(p, turn);
         if (p.leader === null) p.lockout = true;
       } else {
       const elig = boardChars(p).filter((u) => u.entered <= turn - 1);
