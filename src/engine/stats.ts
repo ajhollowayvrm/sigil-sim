@@ -144,9 +144,9 @@ export function effAtk(p: Player, u: Unit): number {
   if (aura && chars(p).some((x) => has(x.t.abil, "aura_mages")) && has(u.t.affils, "Mages Guild")) a += 10;
   if (aura && chars(p).some((x) => has(x.t.abil, "aura_goblin") && x !== u) && has(u.t.affils, "Goblin")) a += 10;
   // Warband (Goblin Standard-Bearer's aura): a SCALING horde anthem — +10 ATK to all your Goblins
-  // for every 3 Goblins you control (so it GROWS with the swarm).
+  // for every 2 Goblins you control (so it GROWS with the swarm).
   if (aura && has(u.t.affils, "Goblin") && chars(p).some((x) => has(x.t.abil, "aura_warband")))
-    a += 10 * Math.floor(chars(p).filter((x) => has(x.t.affils, "Goblin")).length / 3);
+    a += 10 * Math.floor(chars(p).filter((x) => has(x.t.affils, "Goblin")).length / 2);
   if (aura && chars(p).some((x) => has(x.t.abil, "aura_channel") && x !== u) && has(u.t.affils, "Divine Channel")) a += 10;
   // St. Faechious unites the Channel: +20 ATK to ALL your Divine Channel (Church + natural).
   if (aura && chars(p).some((x) => has(x.t.abil, "aura_faechious")) && has(u.t.affils, "Divine Channel")) a += 20;
@@ -194,9 +194,9 @@ export function effDef(p: Player, u: Unit): number {
   // Honathan's aura is +10 ATK only (balance-log: its +10 DEF half made Loyalist a runaway
   // wall). The ATK half lives in effAtk; no DEF contribution here.
   if (has(u.t.abil, "forged_in_chains") && u.wartorn) d += 20;
-  // Warband: the survivability half of the horde anthem — +10 DEF per 3 Goblins (Standard-Bearer).
+  // Warband: the survivability half of the horde anthem — +10 DEF per 2 Goblins (Standard-Bearer).
   if (has(u.t.affils, "Goblin") && chars(p).some((x) => has(x.t.abil, "aura_warband")))
-    d += 10 * Math.floor(chars(p).filter((x) => has(x.t.affils, "Goblin")).length / 3);
+    d += 10 * Math.floor(chars(p).filter((x) => has(x.t.affils, "Goblin")).length / 2);
   if (has(u.t.abil, "my_liege") && chars(p).some((x) => has(x.t.abil, "aura_honathan"))) d += 30; // Captain Arlia's My Liege
   if (has(u.t.abil, "redirect_atherside") && chars(p).some((x) => x.t.name.includes("Arlia"))) d += 10; // At Her Side
   // Plague-archetype DEF (character abilities, not items/events — so they apply even to a

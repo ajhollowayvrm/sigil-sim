@@ -718,8 +718,8 @@ First tried "Warband" as a PERSISTENT EVENT: +10 ATK/DEF per 3 Goblins. It HURT 
 44.9%) — as a persistent it eats a board slot, and Goblin War + Horde Frenzy + Warband = 3 persistents
 choking all 3 passive slots, CAPPING the go-wide deck's board. The anthem fought the swarm it grows.
 Fix: move the same scaling aura onto a CHARACTER — **Goblin Standard-Bearer** (T1, 20/10/10): "your
-Goblin characters have +10 ATK and +10 DEF for every three Goblins you control." A body that counts
-toward its own count, not a slot tax. Result: **Goblin 44.9% -> 48.2%** (vs ~46.8% baseline), Goblin
-vs Wild 34% -> 38%, **SPREAD 9.3 -> 6.0**. The buff grows with the horde and rewards going wide (the
+Goblin characters have +10 ATK and +10 DEF for every two Goblins you control." A body that counts
+toward its own count, not a slot tax. Result: **Goblin 44.9% -> 50.0%** (vs ~46.8% baseline; +10/+10 per 2 Goblins), Goblin
+vs Wild 34% -> 40%, **SPREAD 9.3 -> 6.0; Goblin now centered at 50%**. The buff grows with the horde and rewards going wide (the
 +DEF gives the fragile swarm survivability); kill the Bearer to drop it. (Wild still ~53.5% — a touch
 high from Primal Fusion; can dial its gate to 4+ if desired.)
