@@ -50,7 +50,7 @@ import {
   placePersistent,
   removePersistent,
 } from "../engine/stats";
-import { applyForge, applyTransform, canAfford, forgeOptions, metamorph } from "../engine/transform";
+import { applyForge, applyTransform, canAfford, forgeOptions, fuse, metamorph } from "../engine/transform";
 import { cloneBoth } from "./clone";
 import { evalState, unitValue } from "./evaluate";
 import type { Player, TransformCost, Unit } from "../engine/types";
@@ -473,6 +473,21 @@ function tryDraw(p: Player): void {
   }
 }
 
+/** Primal Fusion (Wild go-wide payoff): merge two Wild bodies into one bigger threat + draw. Only
+ *  when we control 3+ Wilds, so fusing keeps the board wide while it cashes spare chaff into a
+ *  body that can punch through DEF — and the draw refills toward the next wave. */
+function tryFusion(p: Player): void {
+  while (p.hand.includes("Primal Fusion")) {
+    const wilds = boardChars(p).filter((u) => has(u.t.affils, "Wild"));
+    if (wilds.length < 3) return;
+    wilds.sort((a, b) => effAtk(p, b) + b.hp - (effAtk(p, a) + a.hp));
+    p.hand.splice(p.hand.indexOf("Primal Fusion"), 1);
+    fuse(p, wilds[0], wilds[1]); // strongest absorbs the runner-up
+    draw(p);
+    if (logging()) log(`${p.name}: Primal Fusion — draws a card`);
+  }
+}
+
 /** The Long Road: a heal-over-time; play it while we control a Wandering/Faithless body. */
 function tryLongRoad(p: Player): void {
   if (!p.hand.includes("The Long Road")) return;
@@ -647,6 +662,7 @@ export const greedyPolicy: Policy = {
     // 3) After everything is on the table, duck war-doomed bodies into shelter, and
     //    call a Truce if we're being overrun (buy a turn toward our late-game payoff).
     shelterWarDoomed(p, opp);
+    tryFusion(p); // Wild: cash spare bodies into a bigger fused threat (+ draw)
     tryDisillusion(p); // set up a wanderer body before the transform phase
     tryOpportunity(p); // bank a bonus transform action if it'll be used
     tryProtect(p, opp, turn); // surgical: shield a key threatened body first

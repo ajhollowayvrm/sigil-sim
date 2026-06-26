@@ -187,7 +187,6 @@ export function deckWild(): string[] {
       "Galewing",
       "Lumenkit",
       "Lumenkit",
-      "Glimmermoth",
       "Sootcrawler",
       "Sootcrawler",
       "Pyrnit",
@@ -212,7 +211,8 @@ export function deckWild(): string[] {
       "Metamorphosis",
       "Metamorphosis",
     ],
-    ["Dispel", "Dispel", "Whetstone", "Call of the Wild", "Call of the Wild"],
+    // Primal Fusion ×1 — the go-wide PAYOFF: merge spare bodies into a threat that punches DEF + draw.
+    ["Primal Fusion", "Whetstone", "Dispel", "Dispel", "Call of the Wild", "Call of the Wild"],
   );
 }
 

@@ -682,3 +682,25 @@ interchangeable, perfectly-good bodies. Path to competing: consistency AND a qua
 - Loyalist: a clean buff (+1 Conscription Order + a Field Promotion) lifts it ~48% -> ~52%, no new
   cards — closes a real gap.
 - Goblin / Wild: need BODY power, not tutors.
+
+---
+
+## Round 19 — Fusion mechanic + Wild's "Primal Fusion" (body buff = go-wide payoff)
+
+Per R17/R18: Goblin/Wild need BODY power, not consistency. Added a FUSION mechanic for Wild's body
+buff — framed so it leverages (not fights) the go-wide flood, the way the analysis pointed.
+
+- **Engine** (`transform.ts fuse`): merge one body into another — the keeper gains the other's BASE
+  stats (template + its own mods, not auras), current HP, and banked kills; the consumed body + its
+  equipment leave play. Keeper retains its form (a fused T1 Wild can still Metamorphose). No
+  transform action used.
+- **Primal Fusion** (T1 Event, Wild-locked by text): fuse two Wild creatures + draw a card. The
+  draw is the "still helps you get out more bodies" piece — you cash spare chaff into one threat
+  that punches through DEF and refill toward the next wave. AI fuses the two strongest Wilds when it
+  controls 3+ (so the board stays wide).
+
+### Result (parity 700×3)
+Tuning: ×3 → Wild 57.8% (overshot), ×2 → 56.2%, **×1 → 53.5%** (kept). Wild was ~50%; the fusion is
+a clear, identity-true buff — it finally gives the low-ceiling rush a ceiling. SPREAD 5.6 → 6.7.
+Side effect: Wild now beats Goblin ~62% (the go-wide mirror) — Goblin (46.8%) is now the weakest and
+wants its own body payoff next.

@@ -190,3 +190,27 @@ export function metamorph(p: Player, opp: Player, turn: number, src: Unit, dest:
   fireEntry(p, opp, nu);
   return nu;
 }
+
+/** Fusion (Wild go-wide payoff): merge `consume` into `keep` — keep gains the other's BASE stats
+ *  (its template + its own accumulated mods, not conditional auras), its current HP, and its banked
+ *  kills; the consumed body (and its equipment) leaves play. `keep` retains its form/tier, so a
+ *  fused T1 Wild can still Metamorphose later. Does not use the transformation action. */
+export function fuse(p: Player, keep: Unit, consume: Unit): void {
+  keep.mods.atk += consume.t.atk + consume.mods.atk;
+  keep.mods.deff += consume.t.deff + consume.mods.deff;
+  keep.mods.hp += consume.t.hp + consume.mods.hp;
+  keep.hp += Math.max(0, consume.hp);
+  keep.kills += consume.kills;
+  for (const lst of [p.active, p.passive]) {
+    const i = lst.indexOf(consume);
+    if (i >= 0) {
+      lst.splice(i, 1);
+      break;
+    }
+  }
+  for (let i = p.pcards.length - 1; i >= 0; i--) {
+    const e = p.pcards[i];
+    if (isEquipObj(e) && e.link === consume) p.pcards.splice(i, 1);
+  }
+  if (logging()) log(`${p.name}: Fusion — ${consume.t.name} merges into ${keep.t.name}`);
+}
