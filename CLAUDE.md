@@ -22,6 +22,7 @@ file's content, then write it into `docs/`. Pull exactly these (use the highest 
 | Save as (`docs/`)            | Box file name                | File ID         |
 |------------------------------|------------------------------|-----------------|
 | `Ruleset.md`                 | `Ruleset v0 7.md`            | `2300674583315` |
+| `Ruleset-v0.8-Amendments.md` | `Ruleset v0 8 Amendments.md` | `2310852874969` |
 | `CombatAndEffects.md`        | `Combat and Effects v0 3.md` | `2300672163644` |
 | `Kaethlaan.md`               | `Kaethlaan v0 4.md`         | `2300735238125` |
 | `NextSteps.md`               | `Next Steps v0 7.md`        | `2300908067066` |
