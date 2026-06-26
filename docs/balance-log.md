@@ -746,3 +746,16 @@ Instrumented 400 Wild games: max Apex size was ×0 in 51% of games, ×1 in 46%, 
 the discard cost + no draw engine mean Wild lacks the cards/bodies to fuse repeatedly. To realize the
 Link-combo vision, Wild needs a card-advantage / body-flood "extender" package (get tons out fast) so
 it can actually chain — TODO, a balance-sensitive add.
+
+### Round 20 resolved — cantrips + final tuning (the chaining-vs-balance tension)
+Added Wild CANTRIPS (the "get tons out quickly" engine): Galewing (draw on enter) + Sootcrawler
+(tutor a Primal Fusion on enter), via entry effects draw_card / fetch_fusion (effects.ts ENTRY +
+CHAR_ENTRY). They DID enable the chain — with full cantrips + cheap cost the Apex reached ×2 in 12%
+of games (was 3%). But that overshot to Wild ~58%, and the tension is fundamental: the discard cost
+that BALANCES the deck also SUPPRESSES the chain (discard-2 -> 51.6% but ×2 fell to 1%), because the
+greedy AI fuses near-optimally so frequent fusion is just strong. Payoff trims (glass-cannon Apex =
+no DEF gain; element effects halved; escalation thresholds) each moved it ~1%. Settled on AJ's
+MIDDLE: discard-1, 2 cantrips (Galewing + Sootcrawler), glass-cannon Apex, weakened effects ->
+**Wild 53.0%, SPREAD 5.7.** Fusion fires in ~59% of games (it's the deck's identity), the element
+effects fire, but the deep escalating chains (×2 reach 4%, ×3 Leader-strike ~0%) are a rare top-end
+payoff — as a combo's dream board should be. Pile On (Goblin fusion) stays in the pool but unused.

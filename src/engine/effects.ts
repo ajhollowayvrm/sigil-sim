@@ -188,6 +188,15 @@ const ENTRY: Record<string, (p: Player, opp: Player, u: Unit) => void> = {
     }
   },
   heal_lowest: (p, _opp, _u) => healLowest(p, 10),
+  draw_card: (p, _opp, _u) => draw(p), // cantrip: replaces itself
+  fetch_fusion: (p, _opp, _u) => {
+    // tutor a Primal Fusion from deck to hand — the Wild combo's enabler
+    const i = p.deck.indexOf("Primal Fusion");
+    if (i >= 0) {
+      p.deck.splice(i, 1);
+      p.hand.push("Primal Fusion");
+    }
+  },
   // Seremin the Sickly is the carrier: on entry he plays Plague from hand or deck — the
   // archetype's turn-1 enabler. Bypasses Plague's normal T2 tier-gate (it's a printed entry
   // effect). Plague is a both-sides field, so it's mirrored onto the opponent (like a war).

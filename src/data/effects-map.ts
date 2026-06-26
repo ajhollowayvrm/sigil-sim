@@ -111,6 +111,10 @@ export const CHAR_ENTRY: Record<string, string> = {
   "Channel Adept": "heal_lowest", // Channeled Mending
   "Hierophant Calyx": "heal_lowest", // Anointing Rite (entry heal 10)
   "Seremin the Sickly": "bring_plague", // the carrier plays Plague from hand/deck on entry (turn-1 enabler)
+  // Wild cantrips (Round 20) — the flood-and-churn velocity that fuels the fusion combo.
+  "Galewing": "draw_card", // Quick Wings: draw on enter
+  "Cinderpel": "draw_card", // Spark Scatter: draw on enter
+  "Sootcrawler": "fetch_fusion", // Scent the Pack: tutor a Primal Fusion on enter
 };
 
 // Transformation gates keyed by DESTINATION form. Items are NEVER a gate — every

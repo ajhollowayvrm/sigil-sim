@@ -31,14 +31,11 @@ Goblin Lieutenant,Earth,2,N,40,30,10,Goblin,,,Goblin Soldier,N,,,,,,Promoted by 
 Goblin Captain,Earth,3,Y,50,40,20,Goblin,Command,"While Goblin Captain is in play, your other Goblin characters have +10 ATK.",Goblin Lieutenant,N,,,,,,He counts heads before a battle and after. The numbers rarely match.,Terminal generic-Goblin commander; aura only (chains stay special to the Lor'oak line).
 Barangrang,Wind,1,Y,10,0,10,Wild,,,,N,,,,,,Gone before you finish blinking.,Common Wild creature; single-form T1 terminal.
 Murlifect,Earth,1,Y,10,10,10,Wild,Regrow,"At the start of your turn, Murlifect heals 10.",,N,,,,,,Take a piece; it grows two back.,Common Wild creature; sticky regen body.
-Cinderpel,Fire,1,Y,10,10,0,Wild,,,,N,,,,,,A coal that learned to run.,Common Wild creature.
 Tidewhisk,Water,1,Y,10,0,10,Wild,,,,N,,,,,,It laughs in a language of bubbles.,Common Wild creature.
 Glimmermoth,Light,1,Y,10,0,20,Wild,,,,N,,,,,,Drawn to every lantern; burned by none.,Common Wild creature; cheap defensive body.
 Bogfang,Earth,1,Y,20,10,0,Wild,,,,N,,,,,,The swamp grew teeth.,Common Wild creature; aggressive.
-Sootcrawler,Dark,1,Y,10,10,0,Wild,,,,N,,,,,,It lives where the fire has been.,Common Wild creature.
 Pyrnit,Fire,1,Y,10,20,0,Wild,,,,N,,,,,,"Small, furious, briefly.",Common Wild creature; glass-cannon.
 Frostnip,Water,1,Y,10,0,10,Wild,,,,N,,,,,,A cold little nip in the dark.,Common Wild creature.
-Galewing,Wind,1,Y,20,10,10,Wild,,,,N,,,,,,It rides the storm it makes.,Common Wild creature.
 Stoneback,Earth,1,Y,20,0,20,Wild,,,,N,,,,,,Patience with a shell.,Common Wild creature; cheap wall.
 Lumenkit,Light,1,Y,10,0,10,Wild,Warmth,"When Lumenkit enters play, heal one of your characters 10.",,N,,,,,,A small warmth that follows you home.,Common Wild creature; tiny support.
 "Touched Child Hresheeba",Light,1,N,30,20,10,Kaethlaan,,,,N,,,,,,A child who answers questions no one asked aloud.,Base of Hresheeba's 2-tier line (kept short so the enabler lands fast). Upgrades to Old Maid Hresheeba.
@@ -84,3 +81,6 @@ Dr. Mark Poultrain,Dark,3,Y,40,20,10,O'Donner Research,Advanced Pathology,"While
 Chris O'Donner,Dark,4,Y,80,40,30,O'Donner Research,The Director,"While Chris O'Donner is in play, your O'Donner Research characters have +20 ATK.",,N,,,,,,Only one facility has a budget.,plague_immune + aura_odonner (+20 ATK to your O'Donner Research). Standalone capstone.
 St. Faechious,Light,4,Y,80,40,40,"The Channelian Church, Divine Channel",The Last True Voice,"While St. Faechious is in play, ALL your Divine Channel characters have +20 ATK and may chain from any zone; your Channelian Church suppression of naturals does not apply.",,N,,,,,,He will not let them be divided.,aura_faechious - unites both wings. Standalone capstone.
 Goblin Standard-Bearer,Earth,1,N,20,10,10,Goblin,Rally the Horde,"While Goblin Standard-Bearer is in play, your Goblin characters have +10 ATK and +10 DEF for every two Goblins you control.",,N,,,,,,,"They do not follow the standard. They follow what the standard means: there are more of us than of you.","Goblin go-wide PAYOFF (Round 19) — a SCALING horde anthem on a cheap T1 body (so it's a Goblin that counts toward its own count, not a slot-tax event). +10 ATK/DEF to ALL your Goblins per 2 Goblins you control (6 Goblins = +30/+30). Grows with the swarm; rewards going wide; the +DEF is the survivability the fragile horde lacks. Does NOT stack with a 2nd Bearer (boolean aura). Kill it to drop the buff. Ability flag aura_warband (stats.ts effAtk/effDef). Added this session."
+Cinderpel,Fire,1,Y,10,10,0,Wild,Spark Scatter,"When Cinderpel enters play, draw a card.",,N,,,,,,A coal that learned to run.,"Wild cantrip (R20): draws on enter (entry draw_card) — flood-and-churn fuel for the fusion combo. Added this session."
+Sootcrawler,Dark,1,Y,10,10,0,Wild,Scent the Pack,"When Sootcrawler enters play, search your deck for a Primal Fusion, reveal it, add it to your hand, then shuffle.",,N,,,,,,It lives where the fire has been.,"Wild cantrip/tutor (R20): fetches a Primal Fusion on enter (entry fetch_fusion) — reliable fusion access. Added this session."
+Galewing,Wind,1,Y,20,10,10,Wild,Quick Wings,"When Galewing enters play, draw a card.",,N,,,,,,It rides the storm it makes.,"Wild cantrip (R20): draws on enter (entry draw_card). Added this session."

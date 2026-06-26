@@ -7,7 +7,7 @@ import { FUEL_GRANTED_CHAIN } from "../data/effects-map";
 import { cleanup, fireEntry } from "./effects";
 import { comps } from "./elements";
 import { log, logging } from "./log";
-import { chars, draw, effMaxhp, isEquipObj, isKaethlaan, LB, linkedEquips, makeUnit } from "./stats";
+import { chars, effMaxhp, isEquipObj, isKaethlaan, LB, linkedEquips, makeUnit } from "./stats";
 import type { Equip, ItemCost, Player, TransformCost, Unit } from "./types";
 
 const has = (arr: string[], x: string) => arr.includes(x);
@@ -199,7 +199,8 @@ export function metamorph(p: Player, opp: Player, turn: number, src: Unit, dest:
  *  an ELEMENT EFFECT keyed to the ABSORBED creature's element. Does not use the transform action. */
 export function fuse(p: Player, opp: Player, keep: Unit, consume: Unit): void {
   keep.mods.atk += consume.t.atk + consume.mods.atk;
-  keep.mods.deff += consume.t.deff + consume.mods.deff;
+  // NOTE: the Apex gains the absorbed creature's ATK and HP but NOT its DEF — it's a glass cannon
+  // (a growing threat, not a wall), so fusing OFTEN stays fair. Earth absorptions still harden it.
   keep.mods.hp += consume.t.hp + consume.mods.hp;
   keep.hp += Math.max(0, consume.hp);
   keep.kills += consume.kills;
@@ -226,14 +227,14 @@ export function fuse(p: Player, opp: Player, keep: Unit, consume: Unit): void {
       if (logging()) log(`  🔥 Fusion (Fire) — 10 damage to ${t.t.name}`);
     }
   }
-  if (el.includes("Water")) keep.hp = Math.min(effMaxhp(p, keep), keep.hp + 20); // regenerate
-  if (el.includes("Earth")) keep.mods.deff += 20; // harden (permanent)
-  if (el.includes("Wind")) draw(p); // the pack scatters and regroups — an extra card
+  if (el.includes("Water")) keep.hp = Math.min(effMaxhp(p, keep), keep.hp + 10); // regenerate
+  if (el.includes("Earth")) keep.mods.deff += 10; // harden (permanent)
+  if (el.includes("Wind")) keep.mods.atk += 10; // the gale sharpens it (no longer a free draw — the cantrips do that)
   if (el.includes("Light")) {
     const ally = chars(p)
       .filter((c) => c.hp < effMaxhp(p, c))
       .sort((a, b) => a.hp / effMaxhp(p, a) - b.hp / effMaxhp(p, b))[0];
-    if (ally) ally.hp = Math.min(effMaxhp(p, ally), ally.hp + 20);
+    if (ally) ally.hp = Math.min(effMaxhp(p, ally), ally.hp + 10);
   }
   if (el.includes("Dark") && opp.leader) opp.leader.hp -= 10; // drains the life it can reach
   cleanup(opp); // remove anything the Fire/Dark burst killed

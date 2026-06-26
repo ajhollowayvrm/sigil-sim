@@ -486,7 +486,8 @@ function tryFusion(p: Player, opp: Player): void {
       const bodies = boardChars(p).filter((u) => has(u.t.affils, affil));
       if (bodies.length < 2) break;
       p.hand.splice(p.hand.indexOf(card), 1); // tentatively play the fusion card
-      // COST: discard a card (the cheapest non-fusion card). If nothing to pitch, abort the fusion.
+      // COST: discard a card (cheapest non-fusion). Cheap enough to fuse OFTEN (so the Apex chains),
+      // balanced instead by a modest per-fusion payoff. Abort if there's nothing to pitch.
       const fodder = p.hand.filter((c) => !(c in FUSION_CARDS)).sort((a, b) => discardWorth(a) - discardWorth(b))[0];
       if (fodder === undefined) {
         p.hand.push(card);
