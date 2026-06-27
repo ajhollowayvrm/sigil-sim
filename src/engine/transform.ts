@@ -60,8 +60,10 @@ function consumeFuelBuff(p: Player, max: number): { atk: number; deff: number; h
   return buff;
 }
 
-/** Apply a (validated) transformation: consume costs, swap the form, fire entry. */
-export function applyTransform(p: Player, opp: Player, turn: number, u: Unit, dest: string, cost: TransformCost): Unit {
+/** Apply a (validated) transformation: consume costs, swap the form, fire entry. `deferEntry`
+ *  skips the new form's entry effect so a caller can resolve it itself (the human play loop
+ *  prompts before optional entries fire); the AI never defers. */
+export function applyTransform(p: Player, opp: Player, turn: number, u: Unit, dest: string, cost: TransformCost, deferEntry = false): Unit {
   // Pay the wanderer gate: consume the body's Disillusioned state if it has it, else the card.
   if (cost.disillusion) {
     if (u.disillusioned) u.disillusioned = false;
@@ -116,7 +118,7 @@ export function applyTransform(p: Player, opp: Player, turn: number, u: Unit, de
   nu.hp = effMaxhp(p, nu) - deficit; // new full max (incl. fuel buff), minus the wounds carried in
   if (logging())
     log(`${p.name}: transforms ${u.t.name} → ${dest}${u.leader ? ` (Leader — tier bonus now +${LB[nu.tier]})` : ""}`);
-  fireEntry(p, opp, nu);
+  if (!deferEntry) fireEntry(p, opp, nu);
   return nu;
 }
 
@@ -170,7 +172,7 @@ export function applyForge(p: Player, bearer: Unit, origin: Equip, dest: string,
 
 /** Metamorphosis (§5.5): morph a T1 Wild into any T2 Wild in hand. Does NOT use
  *  the transformation action. Keeps banked kills; element becomes the new form's. */
-export function metamorph(p: Player, opp: Player, turn: number, src: Unit, dest: string): Unit {
+export function metamorph(p: Player, opp: Player, turn: number, src: Unit, dest: string, deferEntry = false): Unit {
   const deficit = Math.max(0, effMaxhp(p, src) - src.hp); // wounds carry over the morph
   const nu = makeUnit(getCard(dest)!, turn);
   nu.kills = src.kills;
@@ -188,7 +190,7 @@ export function metamorph(p: Player, opp: Player, turn: number, src: Unit, dest:
   const mi = p.hand.indexOf("Metamorphosis");
   if (mi >= 0) p.hand.splice(mi, 1);
   if (logging()) log(`${p.name}: Metamorphosis — ${src.t.name} becomes ${dest} (T2 Wild)`);
-  fireEntry(p, opp, nu);
+  if (!deferEntry) fireEntry(p, opp, nu);
   return nu;
 }
 

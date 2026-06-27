@@ -7,7 +7,7 @@
 // (flagged in the log) while the human directs solo attacks.
 
 import { makePlayer, noCharactersLeft } from "../engine/game";
-import { canBringPlague, cleanup, isInteractiveEntry, playPlagueFrom, startOfTurn } from "../engine/effects";
+import { canBringPlague, cleanup, fireEntry, isInteractiveEntry, playPlagueFrom, startOfTurn } from "../engine/effects";
 import { getCard } from "../data/loadCards";
 import { combat, doChains, reachable, strike } from "../engine/combat";
 import { setLog } from "../engine/log";
@@ -141,6 +141,30 @@ export async function playInteractive(
     else if (key === "plague:deck") playPlagueFrom(p, opp, "deck");
   };
 
+  // In the play mode the human is asked before EVERY optional entry effect fires (anything not
+  // flagged mandatory). Seremin's Plague Carrier gets the richer source prompt above; every other
+  // optional entry is a simple use-it-or-not on the body just played.
+  const resolveEntry = async (p: Player, opp: Player, turn: number, card: string, u: Unit): Promise<void> => {
+    const cc = getCard(card)!;
+    if (cc.entry === "bring_plague") return resolvePlagueCarrier(p, opp, turn);
+    const name = cc.abilityName || `${cc.name}'s effect`;
+    const options: Option[] = [
+      { key: "use", label: `Use ${name}` },
+      { key: "skip", label: `Don't use ${name}` },
+    ];
+    const d: Decision = {
+      kind: "main",
+      actor: p.name as "A" | "B",
+      turn,
+      prompt: `${p.name} — ${name}: use it?`,
+      options,
+      terminalKey: "skip",
+    };
+    const key = await decide(d, p.name as "A" | "B", turn);
+    record(p, turn, "main", options.find((o) => o.key === key) ?? options[1], options);
+    if (key === "use") fireEntry(p, opp, u);
+  };
+
   const finish = (winner: "A" | "B" | "draw", turn: number, why: string): GameRecording => {
     rec.result = { winner, turn, why };
     setLog(null);
@@ -194,9 +218,20 @@ export async function playInteractive(
       const phase: Phase = chosen.key.startsWith("transform:") ? "transform" : "main";
       record(p, turn, phase, chosen, options);
       chosen.apply(p, opp, turn);
-      // Resolve a deferred "may" entry on the body just played (Seremin's Plague Carrier).
-      if (chosen.key.startsWith("play:") && isInteractiveEntry(getCard(chosen.key.split(":")[1])?.entry))
-        await resolvePlagueCarrier(p, opp, turn);
+      // In the play mode, ask the human before any OPTIONAL entry effect fires — on a body just
+      // PLAYED, or the new form from a TRANSFORM / METAMORPHOSIS. Mandatory entries already fired.
+      {
+        const k = chosen.key;
+        const isPlay = k.startsWith("play:");
+        const isMorph = k.startsWith("transform:") || k.startsWith("morph:");
+        const dest = isPlay ? k.split(":")[1] : isMorph ? k.slice(k.lastIndexOf(">") + 1) : null;
+        if (dest && isInteractiveEntry(getCard(dest)?.entry)) {
+          const u = isPlay
+            ? (k.split(":")[2] === "active" ? p.active : p.passive).at(-1)
+            : [...(p.leader ? [p.leader] : []), ...p.active, ...p.passive].find((x) => x.t.name === dest);
+          if (u) await resolveEntry(p, opp, turn, dest, u);
+        }
+      }
       }
     else {
       aiPolicies[p.name as "A" | "B"].mainPhase(p, opp, turn);

@@ -228,7 +228,7 @@ function metamorphs(p: Player): GameAction[] {
       out.push({
         key: `morph:${src.t.name}>${dest}`,
         label: `Metamorphosis: ${src.t.name} → ${dest}`,
-        apply: (pp, oo, tn) => metamorph(pp, oo, tn, src, dest),
+        apply: (pp, oo, tn) => metamorph(pp, oo, tn, src, dest, isInteractiveEntry(getCard(dest)!.entry)),
       });
   return out;
 }
@@ -333,7 +333,8 @@ export function transformActions(p: Player, turn: number): GameAction[] {
         key: `transform:${u.t.name}>${dest}`,
         label: `Transform ${u.t.name} → ${dest}${u.leader ? " (Leader)" : ""}`,
         apply: (pp, oo, tn) => {
-          applyTransform(pp, oo, tn, u, dest, cost);
+          // Defer an OPTIONAL new-form entry so the play loop can prompt; mandatory ones still fire.
+          applyTransform(pp, oo, tn, u, dest, cost, isInteractiveEntry(getCard(dest)!.entry));
           pp.transformedThisTurn = true; // spend the one-per-turn transform action
         },
       });

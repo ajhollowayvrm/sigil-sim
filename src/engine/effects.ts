@@ -207,10 +207,12 @@ const ENTRY: Record<string, (p: Player, opp: Player, u: Unit) => void> = {
   },
 };
 
-/** Entry keys that require a human CHOICE ("you MAY …"). The interactive play loop defers these
- *  (does not auto-fire them) and resolves them with a prompt instead. The AI auto-resolves. */
-const INTERACTIVE_ENTRIES = new Set(["bring_plague"]);
-export const isInteractiveEntry = (key: string | undefined): boolean => !!key && INTERACTIVE_ENTRIES.has(key);
+/** Entry effects that a HUMAN should be asked about ("do you want to use it?") — which, in the play
+ *  mode, is EVERY entry except the genuinely forced ones. MANDATORY_ENTRIES are effects you can't
+ *  decline (a printed downside like Mage Arlia damaging her own guild); those auto-fire. Everything
+ *  else is deferred by the play loop and resolved with a prompt. The AI always auto-resolves. */
+const MANDATORY_ENTRIES = new Set(["dmg_mages"]);
+export const isInteractiveEntry = (key: string | undefined): boolean => !!key && !MANDATORY_ENTRIES.has(key);
 
 /** Which sources Seremin can currently play Plague from (null = he can't: capped, no slot, or no
  *  Plague anywhere). Drives the interactive Plague-Carrier prompt. */
