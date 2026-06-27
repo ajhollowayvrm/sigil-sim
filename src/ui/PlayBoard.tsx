@@ -1,11 +1,13 @@
-import { useCallback, useRef, useState } from "react";
+// PlayBoard — the dev "Play & record" surface (lives in the Admin Lab): pick any
+// two decks + controllers + seed, play/watch, and download the recording. The
+// interactive board itself is the shared BoardGame component.
+
+import { useState } from "react";
 import { ALL_DECK_NAMES as DECK_NAMES, ALL_DECKS as DECKS } from "../data/decks";
-import { playInteractive, type Controller, type Decision, type View } from "../sim/interactive";
-import type { Phase } from "../sim/record";
+import type { Controller } from "../sim/interactive";
 import type { GameRecording } from "../sim/record";
 import { saveRecording } from "../sim/save";
-import type { SideSnap } from "../sim/recorder";
-import { Card, EventToken } from "./Card";
+import { BoardGame, type GameResultInfo } from "./play/BoardGame";
 
 const WHY: Record<string, string> = {
   leader: "Leader defeated",
@@ -15,214 +17,6 @@ const WHY: Record<string, string> = {
   timeout: "turn cap reached — draw",
 };
 
-const KIND_LABEL: Record<string, string> = {
-  main: "Main phase",
-  transform: "Transformation",
-  combat: "Combat",
-  elevate: "Elevation",
-};
-
-// One-line "how to act" hint per decision kind — the board is the primary surface.
-const KIND_HINT: Record<string, string> = {
-  main: "Drag or tap a hand card, then a zone to play it — or a body to equip / transform it.",
-  transform: "Drag or tap a hand form, then the body it upgrades.",
-  combat: "Drag or tap one of your bodies, then an enemy to attack it.",
-  elevate: "Drag or tap a body, then your Leader slot to crown it.",
-};
-
-// What the human is currently dragging.
-type Drag = { kind: "hand"; card: string } | { kind: "unit"; name: string; idx: number };
-
-// Everything a Side needs to wire drag-and-drop. Undefined ⇒ inert (watch / non-acting side).
-interface DnD {
-  drag: Drag | null;
-  selected: Drag | null; // tap-armed source (mirrors drag, for touch)
-  kind?: Phase; // the pending decision kind
-  isActor: boolean; // this side is the one to act
-  startHand: (card: string) => void;
-  startUnit: (name: string, idx: number) => void;
-  end: () => void;
-  selectHand: (card: string) => void; // tap a hand card to arm/disarm it
-  selectUnit: (name: string, idx: number) => void; // tap a body to arm/disarm it
-  dropZone: (zone: "active" | "passive") => void;
-  dropUnit: (name: string, idx: number) => void;
-  dropLeader: () => void;
-  // precise legality of a drop, derived from the real option keys (drives highlights)
-  canZone: (zone: "active" | "passive") => boolean;
-  canUnit: (name: string, idx: number) => boolean;
-  canLeader: () => boolean;
-}
-
-function Side({
-  s,
-  hand,
-  name,
-  acting,
-  hideHand,
-  orient,
-  onCard,
-  dnd,
-}: {
-  s: SideSnap;
-  hand: string[];
-  name: string;
-  acting: boolean;
-  hideHand: boolean;
-  orient: "top" | "bottom";
-  onCard: (n: string) => void;
-  dnd?: DnD;
-}) {
-  const drag = dnd?.drag ?? null;
-  const sel = dnd?.selected ?? null;
-  const armed = drag ?? sel; // the currently-armed source, whether dragged or tapped
-  const k = dnd?.kind;
-  const mine = !!dnd?.isActor;
-
-  // A source can be picked up (drag) or armed (tap). Highlights/legality use `armed`.
-  const handSource = mine && (k === "main" || k === "transform") && !hideHand;
-  const zoneCanDrop = (zone: "active" | "passive") => mine && armed?.kind === "hand" && !!dnd?.canZone(zone);
-  const unitCanDrop = (cname: string, idx: number) => {
-    if (!armed || !dnd) return false;
-    const sideOk = armed.kind === "hand" ? mine : !mine; // play-on-friendly vs attack-enemy
-    return sideOk && dnd.canUnit(cname, idx);
-  };
-  const leaderZoneCanDrop = mine && armed?.kind === "unit" && k === "elevate" && !!dnd?.canLeader();
-  // Combat: only active bodies + the Leader attack. Elevation: from active or passive.
-  const zoneDraggable = (zone: "active" | "passive" | "leader") =>
-    mine && ((k === "combat" && zone !== "passive") || (k === "elevate" && zone !== "leader"));
-
-  const unitDnd = (u: { name: string }, idx: number, zone: "active" | "passive" | "leader") => {
-    const isSource = zoneDraggable(zone);
-    const isTarget = unitCanDrop(u.name, idx);
-    return {
-      draggable: isSource,
-      onDragStart: () => dnd?.startUnit(u.name, idx),
-      onDragEnd: () => dnd?.end(),
-      canDrop: isTarget,
-      onDrop: () => dnd?.dropUnit(u.name, idx),
-      // tap: act on a target, else arm/disarm a source, else fall through to inspect
-      onTap: isTarget ? () => dnd?.dropUnit(u.name, idx) : isSource ? () => dnd?.selectUnit(u.name, idx) : undefined,
-      selected: sel?.kind === "unit" && sel.name === u.name && sel.idx === idx,
-    };
-  };
-
-  const zoneRow = (zone: "active" | "passive") => {
-    const units = zone === "active" ? s.active : s.passive;
-    const evs = s.events.filter((e) => e.zone === zone);
-    const hot = zoneCanDrop(zone);
-    return (
-      <div
-        className={`zone${hot ? " candrop" : ""}`}
-        onDragOver={hot ? (e) => e.preventDefault() : undefined}
-        onDrop={hot ? (e) => { e.preventDefault(); dnd?.dropZone(zone); } : undefined}
-        onClick={hot ? () => dnd?.dropZone(zone) : undefined}
-      >
-        <div className="zlabel">{zone}</div>
-        <div className="slots">
-          {units.length === 0 && evs.length === 0 && <div className="empty">empty</div>}
-          {units.map((u, i) => (
-            <Card key={i} u={u} onCard={onCard} dnd={unitDnd(u, i, zone)} />
-          ))}
-          {evs.map((e) => (
-            <EventToken key={e.name} name={e.name} onCard={onCard} />
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const leaderCol = (
-    <div
-      className={`leadercol${leaderZoneCanDrop ? " candrop" : ""}`}
-      onDragOver={leaderZoneCanDrop ? (e) => e.preventDefault() : undefined}
-      onDrop={leaderZoneCanDrop ? (e) => { e.preventDefault(); dnd?.dropLeader(); } : undefined}
-      onClick={leaderZoneCanDrop ? () => dnd?.dropLeader() : undefined}
-    >
-      <div className="zlabel">Leader</div>
-      <Card u={s.leader} onCard={onCard} dnd={s.leader ? unitDnd(s.leader, -1, "leader") : undefined} />
-    </div>
-  );
-
-  const handTray = (
-    <div className="handtray">
-      {hand.length === 0 && <div className="empty">empty hand</div>}
-      {hideHand
-        ? hand.map((_, i) => (
-            <span className="handcard facedown" key={i}>
-              🂠
-            </span>
-          ))
-        : hand.map((c, i) => {
-            const selected = sel?.kind === "hand" && sel.card === c;
-            return (
-              <span
-                className={`handcard${handSource ? " draggable" : ""}${selected ? " selected" : ""}`}
-                key={i}
-                draggable={handSource}
-                onDragStart={handSource ? () => dnd?.startHand(c) : undefined}
-                onDragEnd={handSource ? () => dnd?.end() : undefined}
-                onClick={(e) => { e.stopPropagation(); if (handSource) dnd?.selectHand(c); else onCard(c); }}
-              >
-                {c}
-              </span>
-            );
-          })}
-    </div>
-  );
-
-  const head = (
-    <div className="sidehead">
-      <span className="deckname">
-        {orient === "top" ? "🤖 " : "🧑 "}
-        {name} <span className="meta">({s.name})</span>
-      </span>
-      {acting && <span className="ev">to act</span>}
-      {s.lockout && <span className="lock">LEADERLESS</span>}
-      <span className="counts">
-        hand {s.hand} · deck {s.deck}
-      </span>
-    </div>
-  );
-
-  // Active zone sits nearest the centre line on both sides; the hand is on the outer edge.
-  const band = (
-    <div className="band">
-      {leaderCol}
-      <div className="zonecol">
-        {orient === "top" ? (
-          <>
-            {zoneRow("passive")}
-            {zoneRow("active")}
-          </>
-        ) : (
-          <>
-            {zoneRow("active")}
-            {zoneRow("passive")}
-          </>
-        )}
-      </div>
-    </div>
-  );
-
-  return (
-    <div className={`boardside ${orient}${acting ? " acting" : ""}`}>
-      {orient === "top" ? (
-        <>
-          {head}
-          {handTray}
-          {band}
-        </>
-      ) : (
-        <>
-          {band}
-          {handTray}
-          {head}
-        </>
-      )}
-    </div>
-  );
-}
-
 export function PlayBoard({ onCard }: { onCard: (n: string) => void }) {
   const [a, setA] = useState("War");
   const [b, setB] = useState("Loyalist");
@@ -230,189 +24,21 @@ export function PlayBoard({ onCard }: { onCard: (n: string) => void }) {
   const [ctrlB, setCtrlB] = useState<Controller>("ai");
   const [seed, setSeed] = useState(1);
   const [lockSeed, setLockSeed] = useState(false);
-  const [running, setRunning] = useState(false);
-  const [view, setView] = useState<View | null>(null);
-  const [pending, setPending] = useState<Decision | null>(null);
+  const [runKey, setRunKey] = useState(0);
+  const [activeSeed, setActiveSeed] = useState<number | null>(null);
   const [recording, setRecording] = useState<GameRecording | null>(null);
-  const [drag, setDrag] = useState<Drag | null>(null);
-  const [sel, setSel] = useState<Drag | null>(null); // tap-armed source (touch-friendly)
-  const [showAll, setShowAll] = useState(false);
-  const askRef = useRef<((k: string) => void) | null>(null);
-  const active = drag ?? sel; // whichever source is currently armed
+  const [result, setResult] = useState<GameResultInfo | null>(null);
 
-  const ask = useCallback(
-    (d: Decision) =>
-      new Promise<string>((res) => {
-        setPending(d);
-        setShowAll(false);
-        setSel(null);
-        setDrag(null);
-        askRef.current = (k) => {
-          askRef.current = null;
-          setPending(null);
-          res(k);
-        };
-      }),
-    [],
-  );
+  const running = activeSeed !== null && result === null;
 
-  const onView = useCallback((v: View) => setView(v), []);
-  const choose = (key: string) => askRef.current?.(key);
-
-  // Lets the human watch the AI's plays/attacks land one beat at a time.
-  const pace = useCallback(() => new Promise<void>((res) => setTimeout(res, 650)), []);
-
-  // ---- drag-and-drop → option key resolution ----
-  // Each gesture is matched against the pending decision's real option keys, so a
-  // drop only fires a legal move; anything ambiguous still falls back to the buttons.
-  // Disarm both the drag and the tap-selection.
-  const clear = () => {
-    setDrag(null);
-    setSel(null);
-  };
-  const commit = (key: string) => {
-    choose(key);
-    clear();
-  };
-  const optKeys = () => pending?.options.map((o) => o.key) ?? [];
-  const pick = (...cands: string[]) => {
-    const keys = new Set(optKeys());
-    for (const c of cands) if (keys.has(c)) return commit(c), true;
-    return false;
-  };
-
-  // Predicates: is this drop legal right now? Derived from the real option keys so
-  // a target only highlights when the armed source could actually act there.
-  const attackByName = (name: string) =>
-    optKeys().find((x) => {
-      const m = x.match(/^attack:(.+)#(-?\d+)>(.+)#(-?\d+)$/);
-      return m && active?.kind === "unit" && m[1] === active.name && m[3] === name;
-    });
-  const canZone = (zone: "active" | "passive") => {
-    if (!active || active.kind !== "hand") return false;
-    const keys = new Set(optKeys());
-    return keys.has(`play:${active.card}:${zone}`) || keys.has(`event:${active.card}`) || keys.has(`onplay:${active.card}`);
-  };
-  const canUnit = (name: string, idx: number) => {
-    if (!active) return false;
-    if (active.kind === "hand") {
-      const c = active.card;
-      const keys = new Set(optKeys());
-      return keys.has(`equip:${c}>${name}`) || keys.has(`transform:${name}>${c}`) || keys.has(`morph:${name}>${c}`) || keys.has(`onplay:${c}>${name}`);
-    }
-    return new Set(optKeys()).has(`attack:${active.name}#${active.idx}>${name}#${idx}`) || !!attackByName(name);
-  };
-  const canLeader = () =>
-    !!active &&
-    active.kind === "unit" &&
-    optKeys().some((x) => {
-      const m = x.match(/^elevate:(.+)#\d+$/);
-      return m && m[1] === active.name;
-    });
-
-  const dropZone = (zone: "active" | "passive") => {
-    if (!active || active.kind !== "hand") return;
-    const c = active.card;
-    // Only zone-appropriate plays resolve here; targeted cards (heal/tutor) are
-    // dropped on their target or chosen via the buttons, never auto-guessed.
-    if (!pick(`play:${c}:${zone}`, `event:${c}`, `onplay:${c}`)) clear();
-  };
-
-  const dropUnit = (name: string, idx: number) => {
-    if (!active) return;
-    if (active.kind === "hand") {
-      const c = active.card;
-      if (!pick(`equip:${c}>${name}`, `transform:${name}>${c}`, `morph:${name}>${c}`, `onplay:${c}>${name}`)) clear();
-    } else {
-      if (pick(`attack:${active.name}#${active.idx}>${name}#${idx}`)) return;
-      // Fallback: match by attacker+target name if the index reconstruction misses.
-      const k = attackByName(name);
-      if (k) commit(k);
-      else clear();
-    }
-  };
-
-  const dropLeader = () => {
-    if (!active || active.kind !== "unit") return;
-    const k = optKeys().find((x) => {
-      const m = x.match(/^elevate:(.+)#\d+$/);
-      return m && m[1] === active.name;
-    });
-    if (k) commit(k);
-    else clear();
-  };
-
-  // Tap a source to arm it; tapping the same source again disarms.
-  const selectHand = (card: string) => setSel((s) => (s?.kind === "hand" && s.card === card ? null : { kind: "hand", card }));
-  const selectUnit = (name: string, idx: number) =>
-    setSel((s) => (s?.kind === "unit" && s.name === name && s.idx === idx ? null : { kind: "unit", name, idx }));
-
-  const dndFor = (sideName: "A" | "B"): DnD | undefined => {
-    if (!pending) return undefined;
-    return {
-      drag,
-      selected: sel,
-      kind: pending.kind,
-      isActor: pending.actor === sideName,
-      startHand: (card) => setDrag({ kind: "hand", card }),
-      startUnit: (name, idx) => setDrag({ kind: "unit", name, idx }),
-      end: () => setDrag(null),
-      selectHand,
-      selectUnit,
-      dropZone,
-      dropUnit,
-      dropLeader,
-      canZone,
-      canUnit,
-      canLeader,
-    };
-  };
-
-  async function start() {
+  function start() {
     const s = lockSeed ? seed : Math.floor(Math.random() * 1e9);
     if (!lockSeed) setSeed(s);
     setRecording(null);
-    setView(null);
-    setPending(null);
-    setDrag(null);
-    setSel(null);
-    setRunning(true);
-    const rec = await playInteractive(DECKS[a](), DECKS[b](), a, b, s, ask, onView, { A: ctrlA, B: ctrlB }, pace);
-    rec.meta.startedAt = new Date().toISOString();
-    setRecording(rec);
-    setPending(null);
-    setRunning(false);
+    setResult(null);
+    setActiveSeed(s);
+    setRunKey((k) => k + 1);
   }
-
-  const result = view?.result ?? null;
-  const turnLabel = view ? `Turn ${view.turn}${view.actor ? ` · ${view.actor === "A" ? a : b}'s turn` : ""}` : "—";
-
-  // The human always sits at the bottom; the opponent faces them from the top. In a
-  // hotseat (both human) or a watch (both AI) we default deck A to the bottom seat.
-  const you: "A" | "B" = ctrlB === "human" && ctrlA === "ai" ? "B" : "A";
-  const foe: "A" | "B" = you === "A" ? "B" : "A";
-
-  const terminal = pending?.terminalKey;
-  const plays = pending?.options.filter((o) => o.key !== terminal) ?? [];
-  const terminalLabel = pending?.options.find((o) => o.key === terminal)?.label;
-
-  const renderSide = (letter: "A" | "B", orient: "top" | "bottom") => {
-    if (!view) return null;
-    const ctl = letter === "A" ? ctrlA : ctrlB;
-    const opp = letter === "A" ? ctrlB : ctrlA;
-    return (
-      <Side
-        s={letter === "A" ? view.A : view.B}
-        hand={letter === "A" ? view.handA : view.handB}
-        name={letter === "A" ? a : b}
-        acting={view.actor === letter}
-        hideHand={ctl === "ai" && opp === "human"}
-        orient={orient}
-        onCard={onCard}
-        dnd={dndFor(letter)}
-      />
-    );
-  };
 
   return (
     <div>
@@ -446,7 +72,6 @@ export function PlayBoard({ onCard }: { onCard: (n: string) => void }) {
         <button onClick={start} disabled={running}>
           {running ? "Game in progress…" : "Start game"}
         </button>
-        <span className="fc">{turnLabel}</span>
       </div>
 
       {result && (
@@ -456,10 +81,7 @@ export function PlayBoard({ onCard }: { onCard: (n: string) => void }) {
           {recording && (
             <span className="saverow">
               <button onClick={() => saveRecording(recording)}>⬇ Download recording</button>
-              <button
-                className="ghost"
-                onClick={() => navigator.clipboard?.writeText(JSON.stringify(recording, null, 2))}
-              >
+              <button className="ghost" onClick={() => navigator.clipboard?.writeText(JSON.stringify(recording, null, 2))}>
                 Copy JSON
               </button>
               <span className="meta">{recording.moves.length} moves recorded</span>
@@ -468,76 +90,28 @@ export function PlayBoard({ onCard }: { onCard: (n: string) => void }) {
         </div>
       )}
 
-      {/* Drag-first action bar: the board is how you act; this just states the phase,
-          carries the terminal action (end phase / end combat / decline), and tucks the
-          full legal-move list behind a toggle as a fallback. */}
-      {pending && (
-        <div className="actionbar">
-          <span className={`dkind ${pending.kind}`}>{KIND_LABEL[pending.kind]}</span>
-          <span className="ahint">{KIND_HINT[pending.kind]}</span>
-          {sel && (
-            <span className="selchip">
-              ● {sel.kind === "hand" ? sel.card : sel.name}
-              <button className="cancelsel" onClick={() => setSel(null)} title="Cancel selection">
-                ✕
-              </button>
-            </span>
-          )}
-          <span className="spacer" />
-          {terminal && (
-            <button className="optbtn" onClick={() => choose(terminal)}>
-              {terminalLabel}
-            </button>
-          )}
-          {plays.length > 0 && (
-            <button className="optbtn ghost" onClick={() => setShowAll((v) => !v)}>
-              {showAll ? "Hide moves" : `All moves (${plays.length})`}
-            </button>
-          )}
-          {showAll && (
-            <div className="allmoves">
-              {plays.map((o) => (
-                <button key={o.key} className="optbtn" onClick={() => choose(o.key)}>
-                  {o.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+      {activeSeed !== null && (
+        <BoardGame
+          key={runKey}
+          deckA={DECKS[a]()}
+          deckB={DECKS[b]()}
+          nameA={a}
+          nameB={b}
+          ctrlA={ctrlA}
+          ctrlB={ctrlB}
+          seed={activeSeed}
+          onCard={onCard}
+          onResult={(r, rec) => {
+            setResult(r);
+            setRecording(rec);
+          }}
+        />
       )}
 
-      {view && (
-        <div className="table">
-          {renderSide(foe, "top")}
-          <div className="centerline">
-            <span>⚔</span>
-          </div>
-          {renderSide(you, "bottom")}
-        </div>
-      )}
-
-      {view && (
-        <div className="playlog">
-          <div className="zlabel">Play-by-play</div>
-          <div className="loglines">
-            {view.log.slice(-60).map((l, i) => (
-              <div key={i} className={l.startsWith("  ") ? "li sub" : "li"}>
-                {l}
-              </div>
-            ))}
-            {view.log.length === 0 && <div className="empty">no moves yet</div>}
-          </div>
-        </div>
-      )}
-
-      {!view && !running && (
+      {activeSeed === null && (
         <p className="note">
-          Pick a deck for each side and choose <b>You</b> or <b>AI</b>. By default you play <b>Deck A</b> from the bottom
-          of the table against the <b>AI</b> across from you. Every play, transform, attack, and elevation is your call —
-          nothing auto-attacks unless a card forces it. <b>Drag</b> a card to act — or, on touch, <b>tap</b> a source then
-          tap its target: a hand card then a zone to play it (or a body to equip/transform), one of your bodies then an
-          enemy to attack. The phase bar carries “end phase”, and <b>All moves</b> lists every legal action if you’d rather
-          click. The AI’s hand stays hidden. Press <b>Start game</b>.
+          Dev sandbox: pick a deck and <b>You</b>/<b>AI</b> for each side, then <b>Start game</b>. Drag a card (or tap
+          source → target) to act; the AI's hand stays hidden. Download the recording for AI tuning.
         </p>
       )}
     </div>

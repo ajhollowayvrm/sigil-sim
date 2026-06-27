@@ -4,7 +4,6 @@
 // from the CSV (never hand-transcribed). Mechanical interpretation (flags,
 // transform costs, item effects) is layered in from effects-map.ts.
 
-import Papa from "papaparse";
 import type { Card, CardInfo, ChainDef, ItemEdge, TransformCost } from "../engine/types";
 import {
   CHAR_FLAGS,
@@ -23,9 +22,13 @@ import {
   ITEM_ANY_TIER,
 } from "./effects-map";
 
-// CSV text is embedded by scripts/embed-csv.ts so both Vite and the tsx CLIs can
-// import it. The docs/*.csv files remain the source of truth — run `npm run embed`.
-import { charactersCsv, eventsCsv, itemsCsv } from "./csv-data";
+// Card canon now lives in src/data/cards.json (the editable card DB seed). Each
+// entry stores its raw CSV columns verbatim, so the row-parsing below is exactly
+// as it was against the CSVs. Regenerate the seed via `npm run migrate-cards`.
+import rawDb from "./cards.json";
+
+type Row = Record<string, string>;
+const cardDb = rawDb as unknown as { characters: Row[]; items: Row[]; events: Row[] };
 
 export { EQUIP, FUEL, ONPLAY, PERSIST, EQUIP_REQUIRES_WAR, T2ITEMS };
 
@@ -52,14 +55,6 @@ function num(s: string | undefined): number {
   return Number.isFinite(n) ? n : NaN;
 }
 
-function parseRows(csv: string): Record<string, string>[] {
-  const out = Papa.parse<Record<string, string>>(csv, {
-    header: true,
-    skipEmptyLines: true,
-  });
-  return out.data.filter((r) => r && (r.Name ?? "").trim().length > 0);
-}
-
 function parseChain(row: Record<string, string>): ChainDef | null {
   const hasChain = (row.HasChain ?? "").trim() === "Y" || (row.ChainName ?? "").trim().length > 0;
   if (!hasChain) return null;
@@ -80,7 +75,7 @@ function parseChain(row: Record<string, string>): ChainDef | null {
 
 // ---- character DB ----
 
-const characterRows = parseRows(charactersCsv);
+const characterRows = cardDb.characters;
 
 const CHARS = new Map<string, Card>();
 for (const row of characterRows) {
@@ -229,8 +224,8 @@ export { CHARS };
 
 // ---- item / event browse info ----
 
-const itemRows = parseRows(itemsCsv);
-const eventRows = parseRows(eventsCsv);
+const itemRows = cardDb.items;
+const eventRows = cardDb.events;
 
 // ---- item tier + forge graph (the item-transformation system) ----
 // Tier is canon (CSV `Tier`); the forge topology is parsed from each item's printed
