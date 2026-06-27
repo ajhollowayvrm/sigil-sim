@@ -17,7 +17,7 @@ import {
   isHardCastable,
   playPermissionMin,
 } from "../data/loadCards";
-import { applyTutor, fireEntry, isTutor, tutorPayable, tutorTargets } from "../engine/effects";
+import { applyTutor, fireEntry, isInteractiveEntry, isTutor, tutorPayable, tutorTargets } from "../engine/effects";
 import { logging, log } from "../engine/log";
 import {
   activeSlotsUsed,
@@ -71,7 +71,9 @@ function hardCasts(p: Player, turn: number): GameAction[] {
           (zone === "active" ? pp.active : pp.passive).push(u);
           pp.hand.splice(pp.hand.indexOf(card), 1);
           if (logging()) log(`${pp.name}: plays ${card} (T${cc.tier}${zone === "passive" ? ", to passive" : ""})`);
-          fireEntry(pp, oo, u);
+          // A "may" entry (Seremin's Plague Carrier) is DEFERRED — the interactive loop prompts the
+          // human for activate-or-not + source. All other entries fire automatically on play.
+          if (!isInteractiveEntry(cc.entry)) fireEntry(pp, oo, u);
         },
       });
   }

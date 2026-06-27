@@ -7,7 +7,8 @@
 // (flagged in the log) while the human directs solo attacks.
 
 import { makePlayer, noCharactersLeft } from "../engine/game";
-import { cleanup, startOfTurn } from "../engine/effects";
+import { canBringPlague, cleanup, isInteractiveEntry, playPlagueFrom, startOfTurn } from "../engine/effects";
+import { getCard } from "../data/loadCards";
 import { combat, doChains, reachable, strike } from "../engine/combat";
 import { setLog } from "../engine/log";
 import { mulberry32 } from "../engine/rng";
@@ -117,6 +118,29 @@ export async function playInteractive(
     rec.moves.push(move);
   };
 
+  // Seremin's "Plague Carrier" is a "you MAY play Plague from your hand or deck" entry. For a human
+  // we DON'T auto-fire it (actions.ts defers it); we prompt: activate or not, and which source.
+  const resolvePlagueCarrier = async (p: Player, opp: Player, turn: number): Promise<void> => {
+    const avail = canBringPlague(p);
+    if (!avail) return; // capped, no event slot, or no Plague in hand or deck — nothing to choose
+    const options: Option[] = [];
+    if (avail.hand) options.push({ key: "plague:hand", label: "Plague Carrier — play Plague from your hand" });
+    if (avail.deck) options.push({ key: "plague:deck", label: "Plague Carrier — play Plague from your deck" });
+    options.push({ key: "skip", label: "Don't activate Plague Carrier" });
+    const d: Decision = {
+      kind: "main",
+      actor: p.name as "A" | "B",
+      turn,
+      prompt: `${p.name} — Plague Carrier: you may play Plague`,
+      options,
+      terminalKey: "skip",
+    };
+    const key = await decide(d, p.name as "A" | "B", turn);
+    record(p, turn, "main", options.find((o) => o.key === key) ?? options[options.length - 1], options);
+    if (key === "plague:hand") playPlagueFrom(p, opp, "hand");
+    else if (key === "plague:deck") playPlagueFrom(p, opp, "deck");
+  };
+
   const finish = (winner: "A" | "B" | "draw", turn: number, why: string): GameRecording => {
     rec.result = { winner, turn, why };
     setLog(null);
@@ -170,6 +194,9 @@ export async function playInteractive(
       const phase: Phase = chosen.key.startsWith("transform:") ? "transform" : "main";
       record(p, turn, phase, chosen, options);
       chosen.apply(p, opp, turn);
+      // Resolve a deferred "may" entry on the body just played (Seremin's Plague Carrier).
+      if (chosen.key.startsWith("play:") && isInteractiveEntry(getCard(chosen.key.split(":")[1])?.entry))
+        await resolvePlagueCarrier(p, opp, turn);
       }
     else {
       aiPolicies[p.name as "A" | "B"].mainPhase(p, opp, turn);

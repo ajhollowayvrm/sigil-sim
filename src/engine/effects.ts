@@ -197,24 +197,47 @@ const ENTRY: Record<string, (p: Player, opp: Player, u: Unit) => void> = {
       p.hand.push("Primal Fusion");
     }
   },
-  // Seremin the Sickly is the carrier: on entry he plays Plague from hand or deck — the
-  // archetype's turn-1 enabler. Bypasses Plague's normal T2 tier-gate (it's a printed entry
-  // effect). Plague is a both-sides field, so it's mirrored onto the opponent (like a war).
+  // Seremin the Sickly is the carrier: on entry he MAY play Plague from hand or deck — the
+  // archetype's turn-1 enabler. The AI auto-fires it (preferring hand). The interactive (human)
+  // path DEFERS this entry and prompts for activate-or-not + source — see isInteractiveEntry /
+  // canBringPlague / playPlagueFrom below.
   bring_plague: (p, opp, _u) => {
-    if ((p.plagueField || 0) >= 2) return; // already capped — don't stack further
-    const src: string[] | null = p.hand.includes("Plague") ? p.hand : p.deck.includes("Plague") ? p.deck : null;
-    if (!src) return; // no Plague to bring
-    const z = eventSlot(p);
-    if (!z) return; // no slot for the field card
-    src.splice(src.indexOf("Plague"), 1);
-    p.eventZones["Plague"] = z;
-    p.events.add("Plague");
-    p.pcards.push("Plague");
-    p.plagueField = (p.plagueField || 0) + 1;
-    opp.plagueField = (opp.plagueField || 0) + 1; // mirror onto the opponent (world-state)
-    for (const pl of [p, opp]) for (const x of chars(pl)) x.hp = Math.min(x.hp, effMaxhp(pl, x)); // cap-only clip
+    if (p.hand.includes("Plague")) playPlagueFrom(p, opp, "hand");
+    else playPlagueFrom(p, opp, "deck");
   },
 };
+
+/** Entry keys that require a human CHOICE ("you MAY …"). The interactive play loop defers these
+ *  (does not auto-fire them) and resolves them with a prompt instead. The AI auto-resolves. */
+const INTERACTIVE_ENTRIES = new Set(["bring_plague"]);
+export const isInteractiveEntry = (key: string | undefined): boolean => !!key && INTERACTIVE_ENTRIES.has(key);
+
+/** Which sources Seremin can currently play Plague from (null = he can't: capped, no slot, or no
+ *  Plague anywhere). Drives the interactive Plague-Carrier prompt. */
+export function canBringPlague(p: Player): { hand: boolean; deck: boolean } | null {
+  if ((p.plagueField || 0) >= 2 || !eventSlot(p)) return null;
+  const hand = p.hand.includes("Plague");
+  const deck = p.deck.includes("Plague");
+  return hand || deck ? { hand, deck } : null;
+}
+
+/** Play Plague (the both-sides field) from a chosen source onto the board. Bypasses Plague's normal
+ *  T2 tier-gate (it's a printed entry effect). Returns whether it actually played. */
+export function playPlagueFrom(p: Player, opp: Player, source: "hand" | "deck"): boolean {
+  if ((p.plagueField || 0) >= 2) return false; // already capped
+  const src = source === "hand" ? p.hand : p.deck;
+  if (!src.includes("Plague")) return false;
+  const z = eventSlot(p);
+  if (!z) return false; // no slot for the field card
+  src.splice(src.indexOf("Plague"), 1);
+  p.eventZones["Plague"] = z;
+  p.events.add("Plague");
+  p.pcards.push("Plague");
+  p.plagueField = (p.plagueField || 0) + 1;
+  opp.plagueField = (opp.plagueField || 0) + 1; // mirror onto the opponent (world-state)
+  for (const pl of [p, opp]) for (const x of chars(pl)) x.hp = Math.min(x.hp, effMaxhp(pl, x)); // cap-only clip
+  return true;
+}
 
 /** Fires on hard-cast, transform, and Metamorphosis (§6). */
 export function fireEntry(p: Player, opp: Player, u: Unit): void {
